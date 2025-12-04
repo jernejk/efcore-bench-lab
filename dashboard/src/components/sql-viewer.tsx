@@ -5,9 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Copy, Check, Code, FileText } from "lucide-react";
+import { Copy, Check, Code } from "lucide-react";
 import { toast } from "sonner";
 import type { QueryInfo } from "@/lib/webapi-client";
+import { ExecutionPlanDialog } from "@/components/execution-plan-dialog";
 
 interface SqlViewerProps {
   queries: QueryInfo[];
@@ -16,7 +17,6 @@ interface SqlViewerProps {
 
 export function SqlViewer({ queries, title = "SQL Queries" }: SqlViewerProps) {
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
-  const [showExecutionPlan, setShowExecutionPlan] = useState<number | null>(null);
 
   const copyToClipboard = async (sql: string, index: number) => {
     await navigator.clipboard.writeText(sql);
@@ -69,18 +69,11 @@ export function SqlViewer({ queries, title = "SQL Queries" }: SqlViewerProps) {
                   </div>
                   <div className="flex items-center gap-2">
                     {query.executionPlan && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() =>
-                          setShowExecutionPlan(
-                            showExecutionPlan === index ? null : index
-                          )
-                        }
-                      >
-                        <FileText className="h-4 w-4 mr-1" />
-                        Plan
-                      </Button>
+                      <ExecutionPlanDialog 
+                        executionPlan={query.executionPlan}
+                        sql={query.sql}
+                        queryDurationMs={query.durationMs}
+                      />
                     )}
                     <Button
                       variant="ghost"
@@ -100,18 +93,6 @@ export function SqlViewer({ queries, title = "SQL Queries" }: SqlViewerProps) {
                     {formatSql(query.sql)}
                   </code>
                 </pre>
-                {showExecutionPlan === index && query.executionPlan && (
-                  <div className="border-t">
-                    <div className="bg-muted/50 px-3 py-1 text-xs text-muted-foreground">
-                      Execution Plan (XML)
-                    </div>
-                    <pre className="p-3 text-xs overflow-x-auto bg-background max-h-[200px]">
-                      <code className="text-muted-foreground">
-                        {query.executionPlan}
-                      </code>
-                    </pre>
-                  </div>
-                )}
                 {Object.keys(query.parameters).length > 0 && (
                   <div className="border-t px-3 py-2 text-xs">
                     <span className="text-muted-foreground">Parameters: </span>

@@ -100,11 +100,19 @@ export class LMStudioProvider implements AIProvider {
         fullPrompt += `\n**Variant:** ${context.variant}`;
       }
       if (context.metrics) {
-        fullPrompt += `\n\n**Metrics:**
-- Duration: ${context.metrics.durationMs.toFixed(2)} ms
-- Query Count: ${context.metrics.queryCount}
-- Rows Returned: ${context.metrics.rowsReturned}
-- Memory: ${Math.round(context.metrics.memoryAllocatedBytes / 1024)} KB`;
+        fullPrompt += `\n\n**Metrics:**`;
+        if (context.metrics.durationMs !== undefined) {
+          fullPrompt += `\n- Duration: ${context.metrics.durationMs.toFixed(2)} ms`;
+        }
+        if (context.metrics.queryCount !== undefined) {
+          fullPrompt += `\n- Query Count: ${context.metrics.queryCount}`;
+        }
+        if (context.metrics.rowsReturned !== undefined) {
+          fullPrompt += `\n- Rows Returned: ${context.metrics.rowsReturned}`;
+        }
+        if (context.metrics.memoryAllocatedBytes !== undefined) {
+          fullPrompt += `\n- Memory: ${Math.round(context.metrics.memoryAllocatedBytes / 1024)} KB`;
+        }
       }
       if (context.sql) {
         fullPrompt += `\n\n**SQL Query:**\n\`\`\`sql\n${context.sql}\n\`\`\``;

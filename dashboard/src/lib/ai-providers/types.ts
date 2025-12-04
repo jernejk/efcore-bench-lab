@@ -9,13 +9,22 @@ export interface AnalysisContext {
   sql?: string;
   executionPlan?: string;
   metrics?: {
-    durationMs: number;
-    queryCount: number;
-    rowsReturned: number;
-    memoryAllocatedBytes: number;
+    durationMs?: number;
+    queryCount?: number;
+    rowsReturned?: number;
+    memoryAllocatedBytes?: number;
+    // Execution plan specific metrics
+    actualRows?: number;
+    actualLogicalReads?: number;
+    estimatedRows?: number;
+    physicalOp?: string;
+    tableName?: string;
+    indexName?: string;
+    warnings?: string[];
   };
   scenario?: string;
   variant?: string;
+  queryDurationMs?: number;
 }
 
 export interface ChatMessage {
