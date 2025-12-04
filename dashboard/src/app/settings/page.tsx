@@ -86,7 +86,7 @@ export default function SettingsPage() {
               placeholder="http://localhost:5847"
             />
             <p className="text-sm text-muted-foreground">
-              The base URL of the EF Core Performance WebAPI
+              The base URL of the EF Core Bench Lab WebAPI
             </p>
           </div>
         </CardContent>
@@ -213,6 +213,33 @@ export default function SettingsPage() {
           {isSaving ? "Saving..." : "Save Settings"}
         </Button>
       </div>
+
+      {/* About / Attribution */}
+      <Card>
+        <CardHeader>
+          <CardTitle>About</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <p className="text-sm text-muted-foreground">
+            EF Core Bench Lab is an interactive lab for benchmarking and testing EF Core query performance. Swap components, test scenarios, and measure results - just like a PC bench build for your queries.
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Created by{" "}
+            <a
+              href="https://github.com/jernejk"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary hover:underline"
+            >
+              JK
+            </a>
+            {" "}(Jernej Kavka)
+          </p>
+          <p className="text-xs text-muted-foreground mt-4">
+            © {new Date().getFullYear()} Jernej Kavka (JK). All rights reserved.
+          </p>
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# EF Core Performance Lab - Seed Database
+# EF Core Bench Lab - Seed Database
 
 set -e
 

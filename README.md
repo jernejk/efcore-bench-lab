@@ -1,6 +1,6 @@
-# EF Core Performance Lab
+# EF Core Bench Lab
 
-Interactive demonstration tool for EF Core query performance best practices and anti-patterns.
+Interactive EF Core Query Performance Lab - Swap components, test scenarios, and benchmark performance. A lab for experimenting with EF Core query patterns and best practices.
 
 ## Quick Start
 
@@ -136,4 +136,14 @@ Configure via Settings page or environment variables:
 ## License
 
 MIT
+
+## Author
+
+Created by [JK](https://github.com/jernejk) (Jernej Kavka)
+
+© 2025 Jernej Kavka (JK). All rights reserved.
+
+## GitHub Repo
+
+`efcore-bench-lab` - Bench build your EF Core queries, swap components, and test performance.
 

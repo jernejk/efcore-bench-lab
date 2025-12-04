@@ -17,8 +17,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "EF Core Performance Lab",
-  description: "Interactive EF Core query performance demonstration tool",
+  title: "EF Core Bench Lab",
+  description: "Interactive EF Core Query Performance Lab - Swap components, test scenarios, and benchmark performance. A lab for experimenting with EF Core query patterns and best practices.",
 };
 
 export default function RootLayout({
@@ -40,6 +40,9 @@ export default function RootLayout({
               <div className="flex-1" />
             </header>
             <main className="flex-1 p-4 md:p-6">{children}</main>
+            <footer className="border-t px-4 py-3 text-center text-sm text-muted-foreground">
+              © {new Date().getFullYear()} Jernej Kavka (JK). All rights reserved.
+            </footer>
           </SidebarInset>
         </Providers>
       </body>

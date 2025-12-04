@@ -1,7 +1,8 @@
 {
-  "name": "dashboard",
+  "name": "efcore-bench-lab-dashboard",
   "version": "0.1.0",
   "private": true,
+  "author": "Jernej Kavka (JK)",
   "scripts": {
     "dev": "next dev -p 3847",
     "build": "next build",

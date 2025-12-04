@@ -1,13 +1,13 @@
 #!/bin/bash
 
-# EF Core Performance Lab - Start All Services
+# EF Core Bench Lab - Start All Services
 
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 
-echo "🚀 Starting EF Core Performance Lab..."
+echo "🚀 Starting EF Core Bench Lab..."
 echo ""
 
 # Check if Docker is running

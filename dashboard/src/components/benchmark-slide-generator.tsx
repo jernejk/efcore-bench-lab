@@ -399,7 +399,7 @@ function SlideContainer({ children, title, subtitle, theme }: { children: React.
       </div>
       <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>{children}</div>
       <div style={{ fontSize: 18, color: theme.footer.text, marginTop: 16, display: "flex", justifyContent: "space-between", flexShrink: 0 }}>
-        <span>EF Core Performance Lab</span>
+        <span>EF Core Bench Lab</span>
         <span>{new Date().toLocaleDateString()}</span>
       </div>
     </div>
@@ -827,7 +827,7 @@ function DashboardStatsSlide({ benchmark, theme }: {
   const topTables = customData.tables.slice().sort((a, b) => b.records - a.records).slice(0, 4);
 
   return (
-    <SlideContainer title="EF Core Performance Lab" subtitle="System & Database Overview" theme={theme}>
+    <SlideContainer title="EF Core Bench Lab" subtitle="System & Database Overview" theme={theme}>
       <div style={{ flex: 1, display: "flex", gap: 32 }}>
         {/* Left Column - System Info */}
         <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 24 }}>

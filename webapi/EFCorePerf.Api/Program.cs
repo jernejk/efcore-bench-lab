@@ -89,9 +89,9 @@ builder.Services.AddSwaggerGen(options =>
 {
     options.SwaggerDoc("v1", new()
     {
-        Title = "EF Core Performance Lab API",
+        Title = "EF Core Bench Lab API",
         Version = "v1",
-        Description = "API for demonstrating EF Core query performance scenarios"
+        Description = "API for benchmarking and testing EF Core query performance scenarios"
     });
 });
 

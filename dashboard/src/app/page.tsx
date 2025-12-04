@@ -70,7 +70,7 @@ export default function DashboardPage() {
     return {
       id: "dashboard-stats",
       createdAt: new Date().toISOString(),
-      name: "EF Core Performance Lab - System Overview",
+      name: "EF Core Bench Lab - System Overview",
       hardware: {
         os: infoQuery.data.os,
         cpu: "Apple M4 Max",
@@ -121,7 +121,7 @@ export default function DashboardPage() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
           <p className="text-muted-foreground">
-            EF Core Performance Lab - Interactive Query Demonstrations
+            EF Core Bench Lab - Swap components, test scenarios, benchmark performance
           </p>
         </div>
         <div className="flex gap-2">

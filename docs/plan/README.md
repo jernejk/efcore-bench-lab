@@ -1,4 +1,4 @@
-# EF Core Performance Lab - Implementation Plan
+# EF Core Bench Lab - Implementation Plan
 
 > **Purpose**: Demonstrate the importance of building efficient EF Core queries through interactive demos, benchmarking, and AI-assisted analysis.
 
