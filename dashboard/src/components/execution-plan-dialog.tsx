@@ -102,12 +102,27 @@ export function ExecutionPlanDialog({ executionPlan, sql, queryDurationMs }: Exe
   const [aiError, setAiError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // Reset state when dialog closes or execution plan changes
   useEffect(() => {
     if (open && executionPlan) {
       const parsed = parseExecutionPlan(executionPlan);
       setStats(parsed);
+    } else if (!open) {
+      // Reset all state when dialog closes
+      setStats(null);
+      setAiMessages([]);
+      setAiInput("");
+      setAiError(null);
     }
   }, [open, executionPlan]);
+
+  // Also reset when the execution plan prop changes (even while open)
+  useEffect(() => {
+    setStats(null);
+    setAiMessages([]);
+    setAiInput("");
+    setAiError(null);
+  }, [executionPlan]);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -176,11 +191,74 @@ export function ExecutionPlanDialog({ executionPlan, sql, queryDurationMs }: Exe
         queryDurationMs,
       };
 
+      // Find the dominant operator (the one doing actual I/O work, not Compute Scalar/Stream Aggregate)
+      const dominantOp = stats?.operations?.find(op => 
+        op.tableName && (op.physicalOp.includes('Scan') || op.physicalOp.includes('Seek') || op.physicalOp.includes('Lookup'))
+      ) || stats?.operations?.find(op => op.tableName) || stats?.operations?.[stats.operations.length - 1];
+
       const operationsSummary = stats?.operations?.length 
-        ? stats.operations.map(op => 
-            `- ${op.physicalOp} (${op.tableName || 'N/A'}): Est ${op.estimatedRows?.toLocaleString() ?? 'N/A'} rows, Actual ${op.actualRows?.toLocaleString() ?? 'N/A'} rows`
-          ).join("\n")
-        : "(Unable to parse)";
+        ? stats.operations.map(op => {
+            const estActualMatch = op.actualRows !== undefined && op.estimatedRows > 0
+              ? Math.abs(op.actualRows - op.estimatedRows) / op.estimatedRows > 0.5
+                ? " ⚠️ MISMATCH"
+                : " ✓"
+              : "";
+            return `- ${op.physicalOp}${op.tableName ? ` on [${op.tableName}]` : ''}${op.indexName ? ` using [${op.indexName}]` : ''}: Est ${op.estimatedRows?.toLocaleString() ?? '?'} → Actual ${op.actualRows?.toLocaleString() ?? '?'} rows${estActualMatch}`;
+          }).join("\n")
+        : "(Unable to parse operations)";
+
+      // Determine prompt intent to guide response style
+      const lowerPrompt = prompt.toLowerCase();
+      const isExplainOnly = lowerPrompt.includes('explain') || lowerPrompt.includes('what does') || lowerPrompt.includes('how does');
+      const isOptimalityCheck = lowerPrompt.includes('optimal') || lowerPrompt.includes('good') || lowerPrompt.includes('fine') || lowerPrompt.includes('efficient');
+      const isPerformanceQuestion = lowerPrompt.includes('slow') || lowerPrompt.includes('improve') || lowerPrompt.includes('faster') || lowerPrompt.includes('index') || lowerPrompt.includes('optimize');
+
+      let taskInstruction: string;
+      if (isExplainOnly) {
+        taskInstruction = "explain what this execution plan does step by step";
+      } else if (isOptimalityCheck) {
+        taskInstruction = "evaluate whether this plan is appropriate for the query. If it's already efficient, say so clearly";
+      } else if (isPerformanceQuestion) {
+        taskInstruction = "identify specific performance issues if any exist, or confirm the plan is already efficient";
+      } else {
+        taskInstruction = "analyze whether this plan is efficient, and only suggest changes if there's clear evidence of a problem";
+      }
+
+      // Build the improved prompt
+      const systemPrompt = `You are a SQL Server performance expert. Your task: ${taskInstruction}.
+
+IMPORTANT GUIDELINES:
+- If the plan is already efficient for the query's purpose, say so clearly. Not every plan needs optimization.
+- Only suggest changes when there is CLEAR EVIDENCE of a problem (e.g., significant estimate vs actual mismatch at the SAME operator, excessive logical reads relative to rows returned, missing indexes causing table scans on large tables).
+- An Index Scan is NOT automatically bad—for COUNT(*) or queries returning most rows, it's often optimal.
+- Compute Scalar and Stream Aggregate showing "1 row" is normal for aggregate queries—that's the final result, not a statistics problem.
+- Before recommending indexes or hints, verify: Would they actually help given the data access pattern?
+
+User question: ${prompt}
+
+SQL Query:
+${sql || "(Not provided)"}
+
+=== DOMINANT OPERATOR (where the real work happens) ===
+${dominantOp ? `- Operation: ${dominantOp.physicalOp}
+- Table: ${dominantOp.tableName || 'N/A'}
+- Index: ${dominantOp.indexName || 'N/A'}
+- Estimated Rows: ${dominantOp.estimatedRows?.toLocaleString() ?? 'Unknown'}
+- Actual Rows: ${dominantOp.actualRows?.toLocaleString() ?? 'Unknown'}` : '(Could not identify dominant operator)'}
+
+=== RUNTIME METRICS ===
+- Total Logical Reads: ${stats?.actualLogicalReads?.toLocaleString() ?? 'Unknown'}
+- Physical Reads: ${stats?.actualPhysicalReads?.toLocaleString() ?? '0'}
+- Elapsed Time: ${stats?.actualElapsedMs !== undefined ? `${stats.actualElapsedMs}ms` : (queryDurationMs !== undefined ? `~${queryDurationMs}ms` : 'Unknown')}
+- Warnings: ${stats?.warnings?.length ? stats.warnings.join(", ") : "None"}
+
+=== FINAL OUTPUT ===
+- Result Rows: ${stats?.actualRows?.toLocaleString() ?? 'Unknown'} (this is the query result, not scan size)
+
+=== ALL OPERATIONS (ordered by execution) ===
+${operationsSummary}
+
+Respond concisely. If the plan looks fine, just say so.`;
 
       const response = await fetch("/api/ai", {
         method: "POST",
@@ -188,26 +266,7 @@ export function ExecutionPlanDialog({ executionPlan, sql, queryDurationMs }: Exe
         body: JSON.stringify({
           action: "analyze",
           provider: "lmstudio", // Default to local LLM
-          prompt: `You are a SQL Server performance expert. Analyze this execution plan and ${prompt.toLowerCase().includes("explain") ? "explain it" : "suggest improvements"}.
-
-User question: ${prompt}
-
-SQL Query:
-${sql || "(Not provided)"}
-
-Key Statistics:
-- Physical Operation: ${stats?.physicalOp || "Unknown"}
-- Estimated Rows: ${stats?.estimatedRows?.toLocaleString() ?? "Unknown"}
-- Actual Rows: ${stats?.actualRows?.toLocaleString() ?? "Unknown"}
-- Actual Logical Reads: ${stats?.actualLogicalReads?.toLocaleString() ?? "Unknown"}
-- Table: ${stats?.tableName || "Unknown"}
-- Index: ${stats?.indexName || "Unknown"}
-- Warnings: ${stats?.warnings?.length ? stats.warnings.join(", ") : "None"}
-
-Execution Plan Operations:
-${operationsSummary}
-
-Please provide actionable insights.`,
+          prompt: systemPrompt,
           context,
         }),
       });
@@ -229,10 +288,10 @@ Please provide actionable insights.`,
   const hasActualStats = stats?.actualRows !== undefined || stats?.actualLogicalReads !== undefined;
 
   const suggestedPrompts = [
-    "Explain this execution plan",
-    "Why might this be slow?",
-    "Suggest index improvements",
-    "Is this plan optimal?",
+    "Explain this plan step by step",
+    "Is this plan efficient?",
+    "Are there any real issues here?",
+    "What would make this faster?",
   ];
 
   const resetChat = () => {
