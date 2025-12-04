@@ -1,6 +1,5 @@
 using EFCorePerf.Api.Data;
 using EFCorePerf.Api.Data.Entities;
-using EFCorePerf.Api.Extensions;
 using EFCorePerf.Api.Models;
 using EFCorePerf.Api.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -42,7 +41,6 @@ public class ToListController : ControllerBase
             {
                 // DANGER: This downloads the entire table!
                 var allProducts = await _context.Products
-                    .TagWithExecutionPlan(includeExecutionPlan)
                     .ToListAsync(ct);
 
                 // Filter happens in C# memory
@@ -56,7 +54,8 @@ public class ToListController : ControllerBase
                     FilteredCount = expensiveProducts.Count,
                     FilterApplied = $"Price > {minPrice}"
                 };
-            });
+            },
+            includeExecutionPlan);
 
         return Ok(response);
     }
@@ -83,7 +82,6 @@ public class ToListController : ControllerBase
                 // Filter in SQL - only matching rows downloaded
                 var expensiveProducts = await _context.Products
                     .Where(p => p.Price > minPrice)
-                    .TagWithExecutionPlan(includeExecutionPlan)
                     .ToListAsync(ct);
 
                 return new CountResult
@@ -92,7 +90,8 @@ public class ToListController : ControllerBase
                     FilteredCount = expensiveProducts.Count,
                     FilterApplied = $"Price > {minPrice}"
                 };
-            });
+            },
+            includeExecutionPlan);
 
         return Ok(response);
     }
@@ -117,7 +116,6 @@ public class ToListController : ControllerBase
 
                 var filteredCount = await _context.Products
                     .Where(p => p.Price > minPrice)
-                    .TagWithExecutionPlan(includeExecutionPlan)
                     .CountAsync(ct);
 
                 return new CountResult
@@ -126,7 +124,8 @@ public class ToListController : ControllerBase
                     FilteredCount = filteredCount,
                     FilterApplied = $"Price > {minPrice}"
                 };
-            });
+            },
+            includeExecutionPlan);
 
         return Ok(response);
     }
@@ -162,7 +161,8 @@ public class ToListController : ControllerBase
                     TotalRevenue = salesThisYear.Sum(s => s.TotalAmount),
                     Note = "Filter executed client-side - entire table was loaded"
                 };
-            });
+            },
+            includeExecutionPlan);
 
         return Ok(response);
     }
@@ -188,7 +188,6 @@ public class ToListController : ControllerBase
                 // Filter is translated to SQL WHERE clause
                 var salesThisYear = await GetSales()
                     .Where(s => s.SaleDate.Year == year)
-                    .TagWithExecutionPlan(includeExecutionPlan)
                     .ToListAsync(ct);
 
                 return new SalesAnalysis
@@ -198,7 +197,8 @@ public class ToListController : ControllerBase
                     TotalRevenue = salesThisYear.Sum(s => s.TotalAmount),
                     Note = "Filter executed in SQL - only matching rows downloaded"
                 };
-            });
+            },
+            includeExecutionPlan);
 
         return Ok(response);
     }
@@ -227,7 +227,6 @@ public class ToListController : ControllerBase
                         Count = g.Count(),
                         TotalRevenue = g.Sum(s => s.TotalAmount)
                     })
-                    .TagWithExecutionPlan(includeExecutionPlan)
                     .FirstOrDefaultAsync(ct);
 
                 return new SalesAnalysis
@@ -237,7 +236,8 @@ public class ToListController : ControllerBase
                     TotalRevenue = result?.TotalRevenue ?? 0,
                     Note = "Aggregates calculated in SQL - minimal data transferred"
                 };
-            });
+            },
+            includeExecutionPlan);
 
         return Ok(response);
     }

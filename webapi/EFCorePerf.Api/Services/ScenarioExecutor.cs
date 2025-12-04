@@ -12,7 +12,8 @@ public interface IScenarioExecutor
         string scenario,
         string variant,
         string? description,
-        Func<Task<T>> action);
+        Func<Task<T>> action,
+        bool includeExecutionPlan = false);
 }
 
 public class ScenarioExecutor : IScenarioExecutor
@@ -28,52 +29,64 @@ public class ScenarioExecutor : IScenarioExecutor
         string scenario,
         string variant,
         string? description,
-        Func<Task<T>> action)
+        Func<Task<T>> action,
+        bool includeExecutionPlan = false)
     {
         var requestId = _queryLogService.GetCurrentRequestId() ?? Guid.NewGuid().ToString("N");
         var startMemory = GC.GetTotalMemory(false);
         var stopwatch = Stopwatch.StartNew();
         
-        // Execute the scenario
-        var result = await action();
+        // Enable execution plan capture if requested
+        _queryLogService.SetExecutionPlanEnabled(includeExecutionPlan);
         
-        stopwatch.Stop();
-        var endMemory = GC.GetTotalMemory(false);
-        
-        // Get query logs for this request
-        var queries = _queryLogService.GetQueriesForRequest(requestId);
-        var metrics = _queryLogService.GetMetricsForRequest(requestId);
-        
-        // Calculate rows returned (if result is IEnumerable, count it)
-        var rowsReturned = result switch
+        try
         {
-            System.Collections.ICollection collection => collection.Count,
-            System.Collections.IEnumerable enumerable => enumerable.Cast<object>().Count(),
-            _ => 1
-        };
+            // Execute the scenario
+            var result = await action();
         
-        return new ScenarioResponse<T>
+            stopwatch.Stop();
+            var endMemory = GC.GetTotalMemory(false);
+        
+            // Get query logs for this request
+            var queries = _queryLogService.GetQueriesForRequest(requestId);
+            var metrics = _queryLogService.GetMetricsForRequest(requestId);
+        
+            // Calculate rows returned (if result is IEnumerable, count it)
+            var rowsReturned = result switch
+            {
+                System.Collections.ICollection collection => collection.Count,
+                System.Collections.IEnumerable enumerable => enumerable.Cast<object>().Count(),
+                _ => 1
+            };
+        
+            return new ScenarioResponse<T>
+            {
+                RequestId = requestId,
+                Scenario = scenario,
+                Variant = variant,
+                VariantDescription = description,
+                Result = result,
+                Metrics = new ScenarioMetrics
+                {
+                    DurationMs = stopwatch.Elapsed.TotalMilliseconds,
+                    QueryCount = metrics?.QueryCount ?? queries.Count,
+                    RowsReturned = rowsReturned,
+                    MemoryAllocatedBytes = Math.Max(0, endMemory - startMemory)
+                },
+                Queries = queries.Select(q => new QueryInfo
+                {
+                    Sql = q.Sql,
+                    DurationMs = q.DurationMs,
+                    Parameters = q.Parameters,
+                    ExecutionPlan = q.ExecutionPlan
+                }).ToList()
+            };
+        }
+        finally
         {
-            RequestId = requestId,
-            Scenario = scenario,
-            Variant = variant,
-            VariantDescription = description,
-            Result = result,
-            Metrics = new ScenarioMetrics
-            {
-                DurationMs = stopwatch.Elapsed.TotalMilliseconds,
-                QueryCount = metrics?.QueryCount ?? queries.Count,
-                RowsReturned = rowsReturned,
-                MemoryAllocatedBytes = Math.Max(0, endMemory - startMemory)
-            },
-            Queries = queries.Select(q => new QueryInfo
-            {
-                Sql = q.Sql,
-                DurationMs = q.DurationMs,
-                Parameters = q.Parameters,
-                ExecutionPlan = q.ExecutionPlan
-            }).ToList()
-        };
+            // Always disable execution plan capture when done
+            _queryLogService.SetExecutionPlanEnabled(false);
+        }
     }
 }
 

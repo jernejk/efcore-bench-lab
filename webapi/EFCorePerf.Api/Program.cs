@@ -17,19 +17,21 @@ builder.Services.AddSingleton<IQueryLogService, QueryLogService>();
 // Scenario executor
 builder.Services.AddScoped<IScenarioExecutor, ScenarioExecutor>();
 
-// Database interceptors
+// Database interceptor
 builder.Services.AddScoped<TelemetryInterceptor>();
-builder.Services.AddScoped<ExecutionPlanInterceptor>();
+
+// Connection string for EF Core
+var connectionString = builder.Configuration.GetConnectionString("SalesDb")
+    ?? "Server=localhost,11433;Database=SalesDB;User Id=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=True";
 
 // EF Core with SQL Server
 builder.Services.AddDbContext<SalesDbContext>((serviceProvider, options) =>
 {
-    var connectionString = builder.Configuration.GetConnectionString("SalesDb")
-        ?? "Server=localhost,11433;Database=SalesDB;User Id=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=True";
-    
     options.UseSqlServer(connectionString, sqlOptions =>
     {
-        sqlOptions.EnableRetryOnFailure(3);
+        // NOTE: EnableRetryOnFailure is disabled because it uses BufferedDataReader
+        // which conflicts with SET STATISTICS XML ON (actual execution plans).
+        // sqlOptions.EnableRetryOnFailure(3);
         sqlOptions.CommandTimeout(60);
     });
     
@@ -37,7 +39,7 @@ builder.Services.AddDbContext<SalesDbContext>((serviceProvider, options) =>
     var queryLogService = serviceProvider.GetRequiredService<IQueryLogService>();
     options.AddInterceptors(
         new TelemetryInterceptor(queryLogService),
-        new ExecutionPlanInterceptor(queryLogService));
+        new ActualExecutionPlanInterceptor(queryLogService));
     
     // Enable sensitive data logging in development
     if (builder.Environment.IsDevelopment())

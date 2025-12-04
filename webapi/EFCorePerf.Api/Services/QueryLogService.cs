@@ -14,6 +14,10 @@ public interface IQueryLogService
     void StartRequest(string requestId);
     void EndRequest(string requestId);
     void Clear();
+    
+    // Execution plan capture control (via SET STATISTICS XML ON)
+    void SetExecutionPlanEnabled(bool enabled);
+    bool IsExecutionPlanEnabled();
 }
 
 public class QueryLogService : IQueryLogService
@@ -23,6 +27,7 @@ public class QueryLogService : IQueryLogService
     private readonly ConcurrentQueue<QueryLogEntry> _recentQueries = new();
     private readonly AsyncLocal<string?> _currentRequestId = new();
     private readonly AsyncLocal<string?> _lastExecutionPlan = new();
+    private readonly AsyncLocal<bool> _executionPlanEnabled = new();
     private const int MaxRecentQueries = 1000;
     
     public void SetRequestId(string requestId)
@@ -130,6 +135,13 @@ public class QueryLogService : IQueryLogService
         _requestMetrics.Clear();
         while (_recentQueries.TryDequeue(out _)) { }
     }
+    
+    public void SetExecutionPlanEnabled(bool enabled)
+    {
+        _executionPlanEnabled.Value = enabled;
+    }
+    
+    public bool IsExecutionPlanEnabled() => _executionPlanEnabled.Value;
 }
 
 public class QueryLogEntry

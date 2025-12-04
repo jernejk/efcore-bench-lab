@@ -1,6 +1,5 @@
 using EFCorePerf.Api.Data;
 using EFCorePerf.Api.Data.Entities;
-using EFCorePerf.Api.Extensions;
 using EFCorePerf.Api.Models;
 using EFCorePerf.Api.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -43,7 +42,6 @@ public class PaginationController : ControllerBase
             {
                 // DANGER: This loads the entire table!
                 var allSales = await _context.Sales
-                    .TagWithExecutionPlan(includeExecutionPlan)
                     .ToListAsync(ct);
 
                 // Then paginate in memory
@@ -58,7 +56,8 @@ public class PaginationController : ControllerBase
                         TotalAmount = s.TotalAmount
                     })
                     .ToList();
-            });
+            },
+            includeExecutionPlan);
 
         return Ok(response);
     }
@@ -92,9 +91,9 @@ public class PaginationController : ControllerBase
                         SaleDate = s.SaleDate,
                         TotalAmount = s.TotalAmount
                     })
-                    .TagWithExecutionPlan(includeExecutionPlan)
                     .ToListAsync(ct);
-            });
+            },
+            includeExecutionPlan);
 
         return Ok(response);
     }
@@ -137,7 +136,6 @@ public class PaginationController : ControllerBase
                         SaleDate = s.SaleDate,
                         TotalAmount = s.TotalAmount
                     })
-                    .TagWithExecutionPlan(includeExecutionPlan)
                     .ToListAsync(ct);
 
                 // Return cursor for next page
@@ -150,7 +148,8 @@ public class PaginationController : ControllerBase
                         : null,
                     HasMore = sales.Count == pageSize
                 };
-            });
+            },
+            includeExecutionPlan);
 
         return Ok(response);
     }

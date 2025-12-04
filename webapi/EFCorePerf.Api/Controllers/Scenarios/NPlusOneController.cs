@@ -1,5 +1,4 @@
 using EFCorePerf.Api.Data;
-using EFCorePerf.Api.Extensions;
 using EFCorePerf.Api.Models;
 using EFCorePerf.Api.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -42,7 +41,6 @@ public class NPlusOneController : ControllerBase
                 // First query: Get customers
                 var customers = await _context.Customers
                     .Take(take)
-                    .TagWithExecutionPlan(includeExecutionPlan)
                     .ToListAsync(ct);
 
                 var result = new List<CustomerSalesSummary>();
@@ -64,7 +62,8 @@ public class NPlusOneController : ControllerBase
                 }
 
                 return result;
-            });
+            },
+            includeExecutionPlan);
 
         return Ok(response);
     }
@@ -88,7 +87,6 @@ public class NPlusOneController : ControllerBase
                 var customers = await _context.Customers
                     .Include(c => c.Sales)
                     .Take(take)
-                    .TagWithExecutionPlan(includeExecutionPlan)
                     .ToListAsync(ct);
 
                 return customers.Select(c => new CustomerSalesSummary
@@ -98,7 +96,8 @@ public class NPlusOneController : ControllerBase
                     SalesCount = c.Sales.Count,
                     TotalAmount = c.Sales.Sum(s => s.TotalAmount)
                 }).ToList();
-            });
+            },
+            includeExecutionPlan);
 
         return Ok(response);
     }
@@ -128,9 +127,9 @@ public class NPlusOneController : ControllerBase
                         SalesCount = c.Sales.Count,
                         TotalAmount = c.Sales.Sum(s => s.TotalAmount)
                     })
-                    .TagWithExecutionPlan(includeExecutionPlan)
                     .ToListAsync(ct);
-            });
+            },
+            includeExecutionPlan);
 
         return Ok(response);
     }
@@ -161,9 +160,9 @@ public class NPlusOneController : ControllerBase
                         SalesCount = c.Sales.Count,
                         TotalAmount = c.Sales.Sum(s => s.TotalAmount)
                     })
-                    .TagWithExecutionPlan(includeExecutionPlan)
                     .ToListAsync(ct);
-            });
+            },
+            includeExecutionPlan);
 
         return Ok(response);
     }

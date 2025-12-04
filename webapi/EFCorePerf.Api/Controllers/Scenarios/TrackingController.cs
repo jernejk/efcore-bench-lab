@@ -1,5 +1,4 @@
 using EFCorePerf.Api.Data;
-using EFCorePerf.Api.Extensions;
 using EFCorePerf.Api.Models;
 using EFCorePerf.Api.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -41,7 +40,6 @@ public class TrackingController : ControllerBase
             {
                 var products = await _context.Products
                     .Take(take)
-                    .TagWithExecutionPlan(includeExecutionPlan)
                     .ToListAsync(ct);
 
                 return products.Select(p => new ProductDto
@@ -51,7 +49,8 @@ public class TrackingController : ControllerBase
                     Price = p.Price,
                     Category = p.Category
                 }).ToList();
-            });
+            },
+            includeExecutionPlan);
 
         return Ok(response);
     }
@@ -75,7 +74,6 @@ public class TrackingController : ControllerBase
                 var products = await _context.Products
                     .AsNoTracking()
                     .Take(take)
-                    .TagWithExecutionPlan(includeExecutionPlan)
                     .ToListAsync(ct);
 
                 return products.Select(p => new ProductDto
@@ -85,7 +83,8 @@ public class TrackingController : ControllerBase
                     Price = p.Price,
                     Category = p.Category
                 }).ToList();
-            });
+            },
+            includeExecutionPlan);
 
         return Ok(response);
     }
@@ -115,9 +114,9 @@ public class TrackingController : ControllerBase
                         Price = p.Price,
                         Category = p.Category
                     })
-                    .TagWithExecutionPlan(includeExecutionPlan)
                     .ToListAsync(ct);
-            });
+            },
+            includeExecutionPlan);
 
         return Ok(response);
     }
@@ -141,7 +140,6 @@ public class TrackingController : ControllerBase
                 var products = await _context.Products
                     .Include(p => p.Sales)
                     .Take(take)
-                    .TagWithExecutionPlan(includeExecutionPlan)
                     .ToListAsync(ct);
 
                 return products.Select(p => new ProductWithSalesDto
@@ -152,7 +150,8 @@ public class TrackingController : ControllerBase
                     SalesCount = p.Sales.Count,
                     TotalRevenue = p.Sales.Sum(s => s.TotalAmount)
                 }).ToList();
-            });
+            },
+            includeExecutionPlan);
 
         return Ok(response);
     }
@@ -176,7 +175,6 @@ public class TrackingController : ControllerBase
                     .AsNoTracking()
                     .Include(p => p.Sales)
                     .Take(take)
-                    .TagWithExecutionPlan(includeExecutionPlan)
                     .ToListAsync(ct);
 
                 return products.Select(p => new ProductWithSalesDto
@@ -187,7 +185,8 @@ public class TrackingController : ControllerBase
                     SalesCount = p.Sales.Count,
                     TotalRevenue = p.Sales.Sum(s => s.TotalAmount)
                 }).ToList();
-            });
+            },
+            includeExecutionPlan);
 
         return Ok(response);
     }
@@ -217,9 +216,9 @@ public class TrackingController : ControllerBase
                         SalesCount = p.Sales.Count,
                         TotalRevenue = p.Sales.Sum(s => s.TotalAmount)
                     })
-                    .TagWithExecutionPlan(includeExecutionPlan)
                     .ToListAsync(ct);
-            });
+            },
+            includeExecutionPlan);
 
         return Ok(response);
     }

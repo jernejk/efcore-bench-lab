@@ -1,5 +1,4 @@
 using EFCorePerf.Api.Data;
-using EFCorePerf.Api.Extensions;
 using EFCorePerf.Api.Models;
 using EFCorePerf.Api.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -45,7 +44,6 @@ public class UpdatesController : ControllerBase
                 var products = await _context.Products
                     .Where(p => p.Category == category)
                     .Take(limit)
-                    .TagWithExecutionPlan(includeExecutionPlan)
                     .ToListAsync(ct);
 
                 // Update each in memory
@@ -62,7 +60,8 @@ public class UpdatesController : ControllerBase
                     RowsAffected = products.Count,
                     Operation = "Price increased by " + priceIncrease
                 };
-            });
+            },
+            includeExecutionPlan);
 
         return Ok(response);
     }
@@ -90,7 +89,6 @@ public class UpdatesController : ControllerBase
                     .Where(p => p.Category == category)
                     .Take(limit)
                     .Select(p => p.ProductId)
-                    .TagWithExecutionPlan(includeExecutionPlan)
                     .ToListAsync(ct);
 
                 // Single UPDATE statement
@@ -104,7 +102,8 @@ public class UpdatesController : ControllerBase
                     RowsAffected = rowsAffected,
                     Operation = "Price increased by " + priceIncrease
                 };
-            });
+            },
+            includeExecutionPlan);
 
         return Ok(response);
     }

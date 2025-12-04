@@ -1,5 +1,4 @@
 using EFCorePerf.Api.Data;
-using EFCorePerf.Api.Extensions;
 using EFCorePerf.Api.Models;
 using EFCorePerf.Api.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -59,7 +58,6 @@ public class CancellationController : ControllerBase
                         TotalRevenue = g.Sum(s => s.TotalAmount),
                         AverageOrderValue = g.Average(s => s.TotalAmount)
                     })
-                    .TagWithExecutionPlan(includeExecutionPlan)
                     .ToListAsync(); // No CancellationToken!
 
                 _logger.LogInformation("Heavy query completed (without token)");
@@ -69,7 +67,8 @@ public class CancellationController : ControllerBase
                     DepartmentSales = result,
                     QueryCompleted = true
                 };
-            });
+            },
+            includeExecutionPlan);
 
         return Ok(response);
     }
@@ -106,8 +105,7 @@ public class CancellationController : ControllerBase
                             TotalRevenue = g.Sum(s => s.TotalAmount),
                             AverageOrderValue = g.Average(s => s.TotalAmount)
                         })
-                        .TagWithExecutionPlan(includeExecutionPlan)
-                        .ToListAsync(cancellationToken); // WITH CancellationToken!
+                    .ToListAsync(cancellationToken); // WITH CancellationToken!
 
                     _logger.LogInformation("Heavy query completed (with token)");
 
@@ -122,7 +120,8 @@ public class CancellationController : ControllerBase
                     _logger.LogWarning("Query was cancelled by client");
                     throw;
                 }
-            });
+            },
+            includeExecutionPlan);
 
         return Ok(response);
     }
