@@ -9,18 +9,24 @@ const variants = [
     name: "Without CancellationToken",
     description: "Query continues even if request is cancelled - wastes resources",
     isBad: true,
+    queryGoal: "Run a database query that can be cancelled if the user navigates away or the request times out.",
+    queryBehavior: "ANTI-PATTERN: Ignores CancellationToken. If user closes browser mid-query, SQL Server keeps executing. Wastes database resources.",
   },
   {
     id: "with-token",
     name: "With CancellationToken",
     description: "Query cancels when request is aborted - proper cleanup",
     isGood: true,
+    queryGoal: "Run a database query that can be cancelled if the user navigates away or the request times out.",
+    queryBehavior: "Passes CancellationToken to all async database operations. When client disconnects, SQL Server receives cancellation and stops work.",
   },
   {
     id: "slow-query",
     name: "Slow Query Demo",
     description: "Simulated 10-second query - test cancellation by navigating away",
     isBad: false,
+    queryGoal: "Demonstrate cancellation behavior with a deliberately slow query. Navigate away while running to test.",
+    queryBehavior: "Uses WAITFOR DELAY to simulate a 10-second query. Good for testing cancellation - watch the API logs when you navigate away.",
   },
 ];
 

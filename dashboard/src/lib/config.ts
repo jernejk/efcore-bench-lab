@@ -22,7 +22,7 @@ export const defaultSettings: Settings = {
   aiProvider: 'lmstudio',
   lmStudioAutoControl: true,
   lmStudioModel: '',
-  openAiModel: 'gpt-4o',
+  openAiModel: 'gpt-5-mini',
   webApiUrl: config.webApiUrl,
 };
 

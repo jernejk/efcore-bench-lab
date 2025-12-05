@@ -25,6 +25,7 @@ import {
   ListX,
   GitCompare,
   Bot,
+  Presentation,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -78,6 +79,11 @@ const toolItems = [
     title: "Benchmarks",
     url: "/benchmarks",
     icon: BarChart3,
+  },
+  {
+    title: "Slides",
+    url: "/slides",
+    icon: Presentation,
   },
   {
     title: "AI Analysis",

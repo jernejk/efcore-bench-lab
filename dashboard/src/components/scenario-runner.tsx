@@ -20,6 +20,8 @@ interface Variant {
   description: string;
   isBad?: boolean;
   isGood?: boolean;
+  queryGoal?: string;
+  queryBehavior?: string;
 }
 
 interface ScenarioRunnerProps {
@@ -196,7 +198,12 @@ export function ScenarioRunner({ scenario, variants, defaultParams = {} }: Scena
               </div>
               <div className="grid gap-4 md:grid-cols-2">
                 <MetricsCard metrics={result.metrics} title={`${variantId} Metrics`} />
-                <SqlViewer queries={result.queries} title={`${variantId} SQL`} />
+                <SqlViewer 
+                  queries={result.queries} 
+                  title={`${variantId} SQL`}
+                  queryGoal={variants.find(v => v.id === variantId)?.queryGoal}
+                  queryBehavior={variants.find(v => v.id === variantId)?.queryBehavior}
+                />
               </div>
             </div>
           ))}

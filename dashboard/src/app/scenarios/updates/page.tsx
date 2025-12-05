@@ -9,12 +9,16 @@ const variants = [
     name: "Select-Update-Save",
     description: "Loads entities, modifies in loop, saves - N SELECT + N UPDATE",
     isBad: true,
+    queryGoal: "Increase price by $1 for all Electronics products (up to 100). This is a bulk update - we don't need to load the data first.",
+    queryBehavior: "ANTI-PATTERN: Loads each product entity into memory, modifies the Price property in a loop, then calls SaveChanges. Generates SELECT + UPDATE for each row.",
   },
   {
     id: "execute-update",
     name: "ExecuteUpdate",
     description: "Single SQL UPDATE statement - no entity loading",
     isGood: true,
+    queryGoal: "Increase price by $1 for all Electronics products (up to 100). This is a bulk update - we don't need to load the data first.",
+    queryBehavior: "Uses EF Core 7+ ExecuteUpdate(). Translates directly to a single SQL UPDATE statement. No entities loaded, no roundtrips per row.",
   },
 ];
 

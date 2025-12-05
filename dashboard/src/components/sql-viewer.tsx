@@ -13,9 +13,11 @@ import { ExecutionPlanDialog } from "@/components/execution-plan-dialog";
 interface SqlViewerProps {
   queries: QueryInfo[];
   title?: string;
+  queryGoal?: string;
+  queryBehavior?: string;
 }
 
-export function SqlViewer({ queries, title = "SQL Queries" }: SqlViewerProps) {
+export function SqlViewer({ queries, title = "SQL Queries", queryGoal, queryBehavior }: SqlViewerProps) {
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
 
   const copyToClipboard = async (sql: string, index: number) => {
@@ -73,6 +75,8 @@ export function SqlViewer({ queries, title = "SQL Queries" }: SqlViewerProps) {
                         executionPlan={query.executionPlan}
                         sql={query.sql}
                         queryDurationMs={query.durationMs}
+                        queryGoal={queryGoal}
+                        queryBehavior={queryBehavior}
                       />
                     )}
                     <Button

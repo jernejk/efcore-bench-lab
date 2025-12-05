@@ -9,24 +9,32 @@ const variants = [
     name: "Explicit Loop",
     description: "Fetches customers, then loops to get sales - N+1 queries",
     isBad: true,
+    queryGoal: "Get the top 50 customers with their total sales amount. We need customer info + one aggregated number per customer.",
+    queryBehavior: "ANTI-PATTERN: First fetches 50 customers (1 query), then issues a separate query for each customer's sales (50 queries). Total: 51 database roundtrips.",
   },
   {
     id: "eager-loading",
     name: "Eager Loading (Include)",
     description: "Uses Include to eager load sales - single query but loads all columns",
     isBad: false,
+    queryGoal: "Get the top 50 customers with their total sales amount. We need customer info + one aggregated number per customer.",
+    queryBehavior: "Uses Include() to eager load all sales in a single JOIN query. Better than N+1, but loads ALL sales rows into memory just to compute a sum.",
   },
   {
     id: "projection",
     name: "Projection (Select)",
     description: "Projects to DTO with SQL aggregates - optimized single query",
     isGood: true,
+    queryGoal: "Get the top 50 customers with their total sales amount. We need customer info + one aggregated number per customer.",
+    queryBehavior: "Projects to DTO with SQL SUM(). The database computes the aggregate - we only transfer the final number, not raw sales rows.",
   },
   {
     id: "projection-notracking",
     name: "Projection + NoTracking",
     description: "Best performance - projection with AsNoTracking",
     isGood: true,
+    queryGoal: "Get the top 50 customers with their total sales amount. We need customer info + one aggregated number per customer.",
+    queryBehavior: "Same as Projection but with AsNoTracking. Since we're projecting to DTOs (not entities), EF skips change tracking entirely. Maximum efficiency.",
   },
 ];
 

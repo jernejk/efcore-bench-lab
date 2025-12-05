@@ -39,6 +39,23 @@ export interface ServerInfo {
   timestamp: string;
 }
 
+export interface HardwareInfo {
+  os: string;
+  architecture: string;
+  processorCount: number;
+  runtime: string;
+  cpuBrand?: string;
+  performanceCores?: number;
+  efficiencyCores?: number;
+  physicalCores?: number;
+  logicalProcessors?: number;
+  memoryGB?: number;
+  gpuCores?: number;
+  performanceL2CacheMB?: number;
+  efficiencyL2CacheMB?: number;
+  timestamp: string;
+}
+
 export interface ColumnInfo {
   name: string;
   type: string;
@@ -97,6 +114,10 @@ class WebApiClient {
 
   async info(): Promise<ServerInfo> {
     return this.fetch('/api/meta/info');
+  }
+
+  async hardware(): Promise<HardwareInfo> {
+    return this.fetch('/api/meta/hardware');
   }
 
   async dbStats(): Promise<DatabaseStats> {

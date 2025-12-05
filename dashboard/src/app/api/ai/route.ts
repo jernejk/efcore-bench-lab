@@ -71,7 +71,7 @@ function createProvider(
       if (!openaiKey) return null;
       return new OpenAIProvider(
         openaiKey,
-        (config?.openaiModel as string) || "gpt-4o"
+        (config?.openaiModel as string) || "gpt-5-mini"
       );
     case "azure-openai":
       const azureEndpoint = (config?.azureEndpoint as string) || process.env.AZURE_OPENAI_ENDPOINT;

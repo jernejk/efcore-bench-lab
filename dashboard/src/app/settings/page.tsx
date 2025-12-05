@@ -178,10 +178,10 @@ export default function SettingsPage() {
                     <SelectValue placeholder="Select model" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="gpt-4o">GPT-4o</SelectItem>
-                    <SelectItem value="gpt-4o-mini">GPT-4o Mini</SelectItem>
-                    <SelectItem value="gpt-4-turbo">GPT-4 Turbo</SelectItem>
-                    <SelectItem value="gpt-3.5-turbo">GPT-3.5 Turbo</SelectItem>
+                    <SelectItem value="gpt-5-mini">GPT-5 Mini</SelectItem>
+                    <SelectItem value="gpt-5.1">GPT-5.1</SelectItem>
+                    <SelectItem value="gpt-5-nano">GPT-5 Nano</SelectItem>
+                    <SelectItem value="gpt-5-pro">GPT-5 Pro</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

@@ -88,9 +88,11 @@ interface ExecutionPlanDialogProps {
   executionPlan: string;
   sql?: string;
   queryDurationMs?: number;
+  queryGoal?: string;
+  queryBehavior?: string;
 }
 
-export function ExecutionPlanDialog({ executionPlan, sql, queryDurationMs }: ExecutionPlanDialogProps) {
+export function ExecutionPlanDialog({ executionPlan, sql, queryDurationMs, queryGoal, queryBehavior }: ExecutionPlanDialogProps) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [stats, setStats] = useState<ExecutionPlanStats | null>(null);
@@ -227,12 +229,20 @@ export function ExecutionPlanDialog({ executionPlan, sql, queryDurationMs }: Exe
       // Build the improved prompt
       const systemPrompt = `You are a SQL Server performance expert. Your task: ${taskInstruction}.
 
-IMPORTANT GUIDELINES:
-- If the plan is already efficient for the query's purpose, say so clearly. Not every plan needs optimization.
-- Only suggest changes when there is CLEAR EVIDENCE of a problem (e.g., significant estimate vs actual mismatch at the SAME operator, excessive logical reads relative to rows returned, missing indexes causing table scans on large tables).
-- An Index Scan is NOT automatically bad—for COUNT(*) or queries returning most rows, it's often optimal.
-- Compute Scalar and Stream Aggregate showing "1 row" is normal for aggregate queries—that's the final result, not a statistics problem.
-- Before recommending indexes or hints, verify: Would they actually help given the data access pattern?
+${queryGoal ? `=== BUSINESS GOAL (what we want to achieve) ===
+${queryGoal}
+
+` : ''}${queryBehavior ? `=== IMPLEMENTATION APPROACH (how this variant tries to achieve it) ===
+${queryBehavior}
+
+` : ''}${(queryGoal || queryBehavior) ? `Your job is to evaluate whether the ACTUAL execution plan achieves the business goal efficiently. If the implementation approach is fundamentally flawed (e.g., loading all data when we only need 20 rows), call it out clearly.
+
+` : ''}IMPORTANT GUIDELINES:
+- Compare what the query ACTUALLY does vs what the goal requires. If they don't match, that's a problem.
+- If the plan scans millions of rows but the goal only needs 20, that's inefficient regardless of how "clean" the plan looks.
+- Only say "this is efficient" if it actually achieves the goal with minimal resources.
+- An Index Scan is NOT automatically bad—but scanning 11M rows to return 20 IS bad.
+- Be direct: if this approach is fundamentally wrong for the goal, say so.
 
 User question: ${prompt}
 
