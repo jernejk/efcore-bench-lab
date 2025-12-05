@@ -1,3 +1,5 @@
+using System.Diagnostics;
+using System.Runtime.InteropServices;
 using EFCorePerf.Api.Data;
 using EFCorePerf.Api.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -86,6 +88,154 @@ public class MetaController : ControllerBase
             workingSet = Environment.WorkingSet,
             timestamp = DateTime.UtcNow
         });
+    }
+
+    /// <summary>
+    /// Get detailed hardware information (CPU, GPU, etc.)
+    /// </summary>
+    [HttpGet("hardware")]
+    public IActionResult GetHardwareInfo()
+    {
+        var hardware = new Dictionary<string, object>
+        {
+            ["os"] = RuntimeInformation.OSDescription,
+            ["architecture"] = RuntimeInformation.OSArchitecture.ToString(),
+            ["processorCount"] = Environment.ProcessorCount,
+            ["runtime"] = RuntimeInformation.FrameworkDescription
+        };
+
+        try
+        {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                // Get CPU brand
+                var cpuBrand = RunCommand("sysctl", "-n machdep.cpu.brand_string");
+                if (!string.IsNullOrEmpty(cpuBrand))
+                    hardware["cpuBrand"] = cpuBrand.Trim();
+
+                // Get performance cores
+                var perfCores = RunCommand("sysctl", "-n hw.perflevel0.physicalcpu");
+                if (int.TryParse(perfCores, out var pCores))
+                    hardware["performanceCores"] = pCores;
+
+                // Get efficiency cores
+                var effCores = RunCommand("sysctl", "-n hw.perflevel1.physicalcpu");
+                if (int.TryParse(effCores, out var eCores))
+                    hardware["efficiencyCores"] = eCores;
+
+                // Get memory
+                var memBytes = RunCommand("sysctl", "-n hw.memsize");
+                if (long.TryParse(memBytes, out var mem))
+                    hardware["memoryGB"] = mem / (1024 * 1024 * 1024);
+
+                // Get GPU cores via ioreg
+                var gpuInfo = RunCommand("sh", "-c \"ioreg -l | grep 'gpu-core-count' | head -1\"");
+                if (!string.IsNullOrEmpty(gpuInfo))
+                {
+                    var match = System.Text.RegularExpressions.Regex.Match(gpuInfo, @"(\d+)");
+                    if (match.Success && int.TryParse(match.Groups[1].Value, out var gpuCores))
+                        hardware["gpuCores"] = gpuCores;
+                }
+
+                // Get L2 cache sizes
+                var perfL2 = RunCommand("sysctl", "-n hw.perflevel0.l2cachesize");
+                if (long.TryParse(perfL2, out var l2Perf))
+                    hardware["performanceL2CacheMB"] = l2Perf / (1024 * 1024);
+
+                var effL2 = RunCommand("sysctl", "-n hw.perflevel1.l2cachesize");
+                if (long.TryParse(effL2, out var l2Eff))
+                    hardware["efficiencyL2CacheMB"] = l2Eff / (1024 * 1024);
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                // Windows: use WMIC or PowerShell
+                var cpuName = RunCommand("cmd", "/c wmic cpu get name /value");
+                if (!string.IsNullOrEmpty(cpuName))
+                {
+                    var match = System.Text.RegularExpressions.Regex.Match(cpuName, @"Name=(.+)");
+                    if (match.Success)
+                        hardware["cpuBrand"] = match.Groups[1].Value.Trim();
+                }
+
+                var cores = RunCommand("cmd", "/c wmic cpu get NumberOfCores /value");
+                if (!string.IsNullOrEmpty(cores))
+                {
+                    var match = System.Text.RegularExpressions.Regex.Match(cores, @"NumberOfCores=(\d+)");
+                    if (match.Success && int.TryParse(match.Groups[1].Value, out var coreCount))
+                        hardware["physicalCores"] = coreCount;
+                }
+
+                var threads = RunCommand("cmd", "/c wmic cpu get NumberOfLogicalProcessors /value");
+                if (!string.IsNullOrEmpty(threads))
+                {
+                    var match = System.Text.RegularExpressions.Regex.Match(threads, @"NumberOfLogicalProcessors=(\d+)");
+                    if (match.Success && int.TryParse(match.Groups[1].Value, out var threadCount))
+                        hardware["logicalProcessors"] = threadCount;
+                }
+
+                // Memory
+                var memInfo = RunCommand("cmd", "/c wmic ComputerSystem get TotalPhysicalMemory /value");
+                if (!string.IsNullOrEmpty(memInfo))
+                {
+                    var match = System.Text.RegularExpressions.Regex.Match(memInfo, @"TotalPhysicalMemory=(\d+)");
+                    if (match.Success && long.TryParse(match.Groups[1].Value, out var memBytes))
+                        hardware["memoryGB"] = memBytes / (1024 * 1024 * 1024);
+                }
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                // Linux: read from /proc
+                var cpuInfo = RunCommand("sh", "-c \"cat /proc/cpuinfo | grep 'model name' | head -1\"");
+                if (!string.IsNullOrEmpty(cpuInfo))
+                {
+                    var match = System.Text.RegularExpressions.Regex.Match(cpuInfo, @"model name\s*:\s*(.+)");
+                    if (match.Success)
+                        hardware["cpuBrand"] = match.Groups[1].Value.Trim();
+                }
+
+                var memInfo = RunCommand("sh", "-c \"cat /proc/meminfo | grep MemTotal\"");
+                if (!string.IsNullOrEmpty(memInfo))
+                {
+                    var match = System.Text.RegularExpressions.Regex.Match(memInfo, @"MemTotal:\s*(\d+)");
+                    if (match.Success && long.TryParse(match.Groups[1].Value, out var memKB))
+                        hardware["memoryGB"] = memKB / (1024 * 1024);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            hardware["error"] = ex.Message;
+        }
+
+        hardware["timestamp"] = DateTime.UtcNow;
+        return Ok(hardware);
+    }
+
+    private static string? RunCommand(string command, string arguments)
+    {
+        try
+        {
+            var psi = new ProcessStartInfo
+            {
+                FileName = command,
+                Arguments = arguments,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            using var process = Process.Start(psi);
+            if (process == null) return null;
+
+            var output = process.StandardOutput.ReadToEnd();
+            process.WaitForExit(5000);
+            return output;
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     /// <summary>
