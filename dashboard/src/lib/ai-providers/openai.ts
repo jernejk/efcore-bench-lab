@@ -61,10 +61,10 @@ export class OpenAIProvider implements AIProvider {
       }
       if (context.metrics) {
         fullPrompt += `\n\n**Metrics:**
-- Duration: ${context.metrics.durationMs.toFixed(2)} ms
+- Duration: ${context.metrics.durationMs?.toFixed(2) ?? 'N/A'} ms
 - Query Count: ${context.metrics.queryCount}
 - Rows Returned: ${context.metrics.rowsReturned}
-- Memory: ${Math.round(context.metrics.memoryAllocatedBytes / 1024)} KB`;
+- Memory: ${Math.round((context.metrics.memoryAllocatedBytes ?? 0) / 1024)} KB`;
       }
       if (context.sql) {
         fullPrompt += `\n\n**SQL Query:**\n\`\`\`sql\n${context.sql}\n\`\`\``;
@@ -141,10 +141,10 @@ export class AzureOpenAIProvider implements AIProvider {
       }
       if (context.metrics) {
         fullPrompt += `\n\n**Metrics:**
-- Duration: ${context.metrics.durationMs.toFixed(2)} ms
+- Duration: ${context.metrics.durationMs?.toFixed(2) ?? 'N/A'} ms
 - Query Count: ${context.metrics.queryCount}
 - Rows Returned: ${context.metrics.rowsReturned}
-- Memory: ${Math.round(context.metrics.memoryAllocatedBytes / 1024)} KB`;
+- Memory: ${Math.round((context.metrics.memoryAllocatedBytes ?? 0) / 1024)} KB`;
       }
       if (context.sql) {
         fullPrompt += `\n\n**SQL Query:**\n\`\`\`sql\n${context.sql}\n\`\`\``;
