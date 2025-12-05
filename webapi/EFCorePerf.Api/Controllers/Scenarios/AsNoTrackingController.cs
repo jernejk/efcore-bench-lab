@@ -40,16 +40,12 @@ public class AsNoTrackingController : ControllerBase
             async () =>
             {
                 // Without AsNoTracking - EF Core tracks all entities
-                var salesCount = await _context.Sales
-                    .Where(x => x.CustomerId == customerId)
-                    .CountAsync(ct);
+                var sales = await _context.Sales
+                    // .Where(x => x.CustomerId == customerId)
+                    .Take(10000)
+                    .ToListAsync(ct);
 
-                return new CountResult
-                {
-                    TotalInTable = await _context.Sales.CountAsync(ct),
-                    FilteredCount = salesCount,
-                    FilterApplied = $"CustomerId == {customerId} (with change tracking)"
-                };
+                return sales;
             },
             includeExecutionPlan);
 
@@ -73,17 +69,13 @@ public class AsNoTrackingController : ControllerBase
             async () =>
             {
                 // With AsNoTracking - EF Core doesn't track entities
-                var salesCount = await _context.Sales
+                var sales = await _context.Sales
                     .AsNoTracking()
-                    .Where(x => x.CustomerId == customerId)
-                    .CountAsync(ct);
+                    // .Where(x => x.CustomerId == customerId)
+                    .Take(10000)
+                    .ToListAsync(ct);
 
-                return new CountResult
-                {
-                    TotalInTable = await _context.Sales.CountAsync(ct),
-                    FilteredCount = salesCount,
-                    FilterApplied = $"CustomerId == {customerId} (no change tracking)"
-                };
+                return sales;
             },
             includeExecutionPlan);
 
