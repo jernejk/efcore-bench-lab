@@ -24,7 +24,6 @@ public class TelemetryInterceptor : DbCommandInterceptor
         CommandEventData eventData,
         InterceptionResult<DbDataReader> result)
     {
-        StartTimer(command);
         return base.ReaderExecuting(command, eventData, result);
     }
     
@@ -34,7 +33,6 @@ public class TelemetryInterceptor : DbCommandInterceptor
         InterceptionResult<DbDataReader> result,
         CancellationToken cancellationToken = default)
     {
-        StartTimer(command);
         return base.ReaderExecutingAsync(command, eventData, result, cancellationToken);
     }
     
@@ -93,13 +91,6 @@ public class TelemetryInterceptor : DbCommandInterceptor
     {
         RecordQuery(command, eventData);
         return base.ScalarExecutedAsync(command, eventData, result, cancellationToken);
-    }
-    
-    private void StartTimer(DbCommand command)
-    {
-        var commandId = command.GetHashCode();
-        var stopwatch = Stopwatch.StartNew();
-        _commandTimers[Guid.NewGuid()] = stopwatch;
     }
     
     private void RecordQuery(DbCommand command, CommandExecutedEventData eventData, int? rowsAffected = null)
