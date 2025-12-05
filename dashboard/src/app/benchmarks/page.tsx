@@ -51,6 +51,9 @@ const scenarios = [
   { id: "tracking", name: "Tracking", variants: ["tracked", "no-tracking", "projection"] },
   { id: "updates", name: "Updates", variants: ["select-update-save", "execute-update"] },
   { id: "tolist", name: "ToList", variants: ["tolist-before-filter", "filter-before-tolist", "count-in-sql"] },
+  { id: "iqueryable-vs-ienumerable", name: "IQueryable vs IEnumerable", variants: ["naive-count", "sql-count"] },
+  { id: "asnotracking", name: "AsNoTracking", variants: ["with-tracking", "no-tracking"] },
+  { id: "implicit-include", name: "Implicit Include", variants: ["with-include-no-select", "without-include-with-mapping"] },
 ];
 
 // Detect hardware info properly (including Apple Silicon)
