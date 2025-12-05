@@ -85,7 +85,8 @@ export default function DashboardPage() {
           config: {
             duration: "N/A",
             concurrency: 1,
-            warmupRequests: 0
+            warmupRequests: 0,
+            httpTimeoutSeconds: 60
           },
           results: {
             totalRequests: totalRecords,

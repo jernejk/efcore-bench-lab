@@ -48,13 +48,15 @@ import { BenchmarkSlideGenerator } from "@/components/benchmark-slide-generator"
 
 const scenarios = [
   { id: "nplusone", name: "N+1 Problem", variants: ["explicit-loop", "eager-loading", "projection", "projection-notracking"] },
-  { id: "pagination", name: "Pagination", variants: ["in-memory", "offset", "keyset"] },
+  { id: "pagination", name: "Pagination", variants: ["naive-pagination", "sql-pagination"] },
   { id: "tracking", name: "Tracking", variants: ["tracked", "no-tracking", "projection"] },
   { id: "updates", name: "Updates", variants: ["select-update-save", "execute-update"] },
   { id: "tolist", name: "ToList", variants: ["tolist-before-filter", "filter-before-tolist", "count-in-sql"] },
   { id: "iqueryable-vs-ienumerable", name: "IQueryable vs IEnumerable", variants: ["naive-count", "sql-count"] },
   { id: "asnotracking", name: "AsNoTracking", variants: ["with-tracking", "no-tracking"] },
   { id: "implicit-include", name: "Implicit Include", variants: ["with-include-no-select", "without-include-with-mapping"] },
+  { id: "update-demo", name: "Update (DDD Demo)", variants: ["loop-update", "execute-update"] },
+  { id: "split-query", name: "SplitQuery", variants: ["cartesian-explosion", "split-query"] },
 ];
 
 // Detect hardware info properly (including Apple Silicon)

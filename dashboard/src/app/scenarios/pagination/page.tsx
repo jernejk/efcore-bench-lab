@@ -1,32 +1,24 @@
 "use client";
 
 import { ScenarioRunner } from "@/components/scenario-runner";
-import { ScrollText } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 
 const variants = [
   {
-    id: "in-memory",
-    name: "In-Memory Pagination",
-    description: "Loads ALL data then paginates in C# - never do this!",
+    id: "naive-pagination",
+    name: "Naive Pagination",
+    description: "Load ALL data, then paginate in memory - DISASTER!",
     isBad: true,
-    queryGoal: "Get 20 sales records for page 100 (items 1981-2000), ordered by date. We need exactly 20 rows, not the entire table.",
-    queryBehavior: "ANTI-PATTERN: Loads ALL rows from database into memory, then uses C# Skip/Take to extract page 100. The database has no idea we only want 20 rows.",
+    queryGoal: "Get paginated sales data for a salesperson",
+    queryBehavior: "ANTI-PATTERN: Include() loads full SalesPerson entities, ToList() downloads entire table, then Skip/Take in C# memory. Transfers massive amounts of data.",
   },
   {
-    id: "offset",
-    name: "Offset Pagination",
-    description: "Uses Skip/Take - gets slower as page number increases",
-    isBad: true,
-    queryGoal: "Get 20 sales records for page 100 (items 1981-2000), ordered by date. We need exactly 20 rows, not the entire table.",
-    queryBehavior: "Uses SQL OFFSET/FETCH. The database must scan and sort 1980 rows just to skip them, then return the next 20. Gets progressively slower at higher page numbers.",
-  },
-  {
-    id: "keyset",
-    name: "Keyset Pagination",
-    description: "Uses cursor-based pagination - constant time regardless of position",
+    id: "sql-pagination",
+    name: "SQL Pagination",
+    description: "Filter and paginate directly in SQL - efficient",
     isGood: true,
-    queryGoal: "Get 20 sales records for page 100 (items 1981-2000), ordered by date. We need exactly 20 rows, not the entire table.",
-    queryBehavior: "Uses WHERE clause with the last seen ID/date as cursor. Jumps directly to position using index, no scanning of skipped rows. O(1) performance at any page depth.",
+    queryGoal: "Get paginated sales data for a salesperson",
+    queryBehavior: "OPTIMAL: Select() projection with Skip/Take in SQL. Only the required columns and rows are transferred. Count is also done in SQL.",
   },
 ];
 
@@ -35,31 +27,39 @@ export default function PaginationPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-          <ScrollText className="h-8 w-8" />
-          Pagination Trap
+          <ChevronLeft className="h-8 w-8" />
+          Pagination Patterns
         </h1>
         <p className="text-muted-foreground mt-2">
-          Offset pagination (Skip/Take) gets slower as you go deeper into the dataset
-          because the database must scan and skip all previous rows. Keyset pagination
-          maintains constant performance.
+          Loading all data then paginating in memory is a common performance disaster.
+          Always filter and paginate directly in SQL.
         </p>
       </div>
 
       <div className="bg-muted/50 border rounded-lg p-4">
         <h3 className="font-semibold mb-2">What to look for:</h3>
         <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
-          <li><strong>In-Memory:</strong> Downloads entire table - extreme memory and time</li>
-          <li><strong>Offset:</strong> SQL shows OFFSET which requires scanning rows</li>
-          <li><strong>Keyset:</strong> SQL uses WHERE clause with index - fast at any depth</li>
+          <li><strong>SQL:</strong> Naive shows SELECT * FROM Sales with JOIN, good shows SELECT with LIMIT/OFFSET</li>
+          <li><strong>Rows:</strong> Naive returns all rows for the salesperson, good returns only the page size</li>
+          <li><strong>Network:</strong> Naive transfers entire dataset, good transfers only needed data</li>
+          <li><strong>Memory:</strong> Naive loads all entities, good is memory efficient</li>
         </ul>
+      </div>
+
+      <div className="bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+        <h3 className="font-semibold mb-2 text-amber-800 dark:text-amber-200">💡 Tip</h3>
+        <p className="text-sm text-amber-700 dark:text-amber-300">
+          Never call ToList() before Skip() and Take(). Always apply pagination
+          operators (Skip, Take) to IQueryable&lt;T&gt; so they translate to SQL LIMIT/OFFSET.
+          This is especially critical with large datasets!
+        </p>
       </div>
 
       <ScenarioRunner
         scenario="pagination"
         variants={variants}
-        defaultParams={{ page: 100, pageSize: 20 }}
+        defaultParams={{ salesPersonId: 1, page: 0, pageSize: 10 }}
       />
     </div>
   );
 }
-

@@ -32,6 +32,8 @@ import {
   Presentation,
   ChevronDown,
   ChevronRight,
+  ChevronLeft,
+  Split,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -93,6 +95,24 @@ const dddBrisbaneItems = [
     url: "/scenarios/implicit-include",
     icon: Layers,
     description: "Include vs Select projection patterns",
+  },
+  {
+    title: "Pagination",
+    url: "/scenarios/pagination",
+    icon: ChevronLeft,
+    description: "Naive vs SQL pagination",
+  },
+  {
+    title: "Update",
+    url: "/scenarios/update",
+    icon: Zap,
+    description: "Loop update vs ExecuteUpdate",
+  },
+  {
+    title: "SplitQuery",
+    url: "/scenarios/split-query",
+    icon: Split,
+    description: "Cartesian explosion vs AsSplitQuery",
   },
 ];
 
