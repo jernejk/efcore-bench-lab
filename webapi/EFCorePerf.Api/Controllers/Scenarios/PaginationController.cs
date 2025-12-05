@@ -8,7 +8,8 @@ using Microsoft.EntityFrameworkCore;
 namespace EFCorePerf.Api.Controllers.Scenarios;
 
 /// <summary>
-/// Demonstrates pagination approaches - offset vs keyset pagination.
+/// Demonstrates the critical difference between in-memory pagination and SQL pagination.
+/// Loading all data then paginating in memory can be catastrophic for performance.
 /// </summary>
 [ApiController]
 [Route("api/scenarios/pagination")]
@@ -24,129 +25,53 @@ public class PaginationController : ControllerBase
     }
 
     /// <summary>
-    /// Worst case: Load ALL data then paginate in memory.
-    /// Never do this - can cause OOM with large datasets.
+    /// Naive pagination: Load ALL data then paginate in memory.
+    /// This downloads millions of rows when you only need a page!
     /// </summary>
-    [HttpGet("in-memory")]
-    public async Task<ActionResult<ScenarioResponse<List<SaleDto>>>> InMemoryPagination(
-        [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 20,
+    [HttpGet("naive-pagination")]
+    public async Task<ActionResult<ScenarioResponse<PaginatedResult<SalesWithSalesPerson>>>> NaivePagination(
+        [FromQuery] int salesPersonId = 1,
+        [FromQuery] int page = 0,
+        [FromQuery] int pageSize = 10,
         [FromQuery] bool includeExecutionPlan = false,
         CancellationToken ct = default)
     {
         var response = await _executor.ExecuteAsync(
             "pagination",
-            "in-memory",
-            "Loading ALL data then paginating in C# - extremely inefficient",
+            "naive-pagination",
+            $"Naive pagination - loads ALL data for SalesPersonId {salesPersonId}, then paginates in memory (page {page}, size {pageSize})",
             async () =>
             {
                 // DANGER: This loads the entire table!
-                var allSales = await _context.Sales
+                var dbResult = await _context.Sales
+                    .AsNoTracking()
+                    .Include(x => x.SalesPerson)
+                    .Where(x => x.SalesPersonId == salesPersonId)
                     .ToListAsync(ct);
 
-                // Then paginate in memory
-                return allSales
-                    .OrderByDescending(s => s.SaleDate)
-                    .Skip((page - 1) * pageSize)
+                // Paginate in memory after loading everything
+                var paginatedData = dbResult
+                    .Skip(page * pageSize)
                     .Take(pageSize)
-                    .Select(s => new SaleDto
+                    .Select(x => new SalesWithSalesPerson
                     {
-                        SalesId = s.SalesId,
-                        SaleDate = s.SaleDate,
-                        TotalAmount = s.TotalAmount
+                        CustomerId = x.CustomerId,
+                        SalesId = x.SalesPersonId,
+                        ProductId = x.ProductId,
+                        Quantity = x.Quantity,
+                        SalesPersonId = x.SalesPersonId,
+                        SalesPersonFirstName = x.SalesPerson.FirstName,
+                        SalesPersonLastName = x.SalesPerson.LastName
                     })
                     .ToList();
-            },
-            includeExecutionPlan);
 
-        return Ok(response);
-    }
-
-    /// <summary>
-    /// Bad case: Offset pagination using Skip/Take.
-    /// Performance degrades as page number increases (O(n) complexity).
-    /// </summary>
-    [HttpGet("offset")]
-    public async Task<ActionResult<ScenarioResponse<List<SaleDto>>>> OffsetPagination(
-        [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 20,
-        [FromQuery] bool includeExecutionPlan = false,
-        CancellationToken ct = default)
-    {
-        var response = await _executor.ExecuteAsync(
-            "pagination",
-            "offset",
-            $"Offset pagination (page {page}) - gets slower as page increases",
-            async () =>
-            {
-                return await _context.Sales
-                    .AsNoTracking()
-                    .OrderByDescending(s => s.SaleDate)
-                    .ThenByDescending(s => s.SalesId)
-                    .Skip((page - 1) * pageSize)
-                    .Take(pageSize)
-                    .Select(s => new SaleDto
-                    {
-                        SalesId = s.SalesId,
-                        SaleDate = s.SaleDate,
-                        TotalAmount = s.TotalAmount
-                    })
-                    .ToListAsync(ct);
-            },
-            includeExecutionPlan);
-
-        return Ok(response);
-    }
-
-    /// <summary>
-    /// Good case: Keyset (cursor) pagination.
-    /// Constant performance regardless of how deep you paginate (O(1) complexity).
-    /// </summary>
-    [HttpGet("keyset")]
-    public async Task<ActionResult<ScenarioResponse<KeysetPageResult>>> KeysetPagination(
-        [FromQuery] DateTime? lastSaleDate = null,
-        [FromQuery] int? lastSalesId = null,
-        [FromQuery] int pageSize = 20,
-        [FromQuery] bool includeExecutionPlan = false,
-        CancellationToken ct = default)
-    {
-        var response = await _executor.ExecuteAsync(
-            "pagination",
-            "keyset",
-            "Keyset pagination - constant time regardless of position",
-            async () =>
-            {
-                var query = _context.Sales.AsNoTracking();
-
-                // Apply keyset filter if we have a cursor
-                if (lastSaleDate.HasValue && lastSalesId.HasValue)
+                return new PaginatedResult<SalesWithSalesPerson>
                 {
-                    query = query.Where(s =>
-                        s.SaleDate < lastSaleDate.Value ||
-                        (s.SaleDate == lastSaleDate.Value && s.SalesId < lastSalesId.Value));
-                }
-
-                var sales = await query
-                    .OrderByDescending(s => s.SaleDate)
-                    .ThenByDescending(s => s.SalesId)
-                    .Take(pageSize)
-                    .Select(s => new SaleDto
-                    {
-                        SalesId = s.SalesId,
-                        SaleDate = s.SaleDate,
-                        TotalAmount = s.TotalAmount
-                    })
-                    .ToListAsync(ct);
-
-                // Return cursor for next page
-                var lastItem = sales.LastOrDefault();
-                return new KeysetPageResult
-                {
-                    Data = sales,
-                    NextCursor = lastItem != null
-                        ? new PageCursor { SaleDate = lastItem.SaleDate, SalesId = lastItem.SalesId }
-                        : null,
-                    HasMore = sales.Count == pageSize
+                    Data = paginatedData,
+                    Page = page,
+                    PageSize = pageSize,
+                    TotalCount = dbResult.Count,
+                    TotalPages = (int)Math.Ceiling(dbResult.Count / (double)pageSize)
                 };
             },
             includeExecutionPlan);
@@ -155,74 +80,58 @@ public class PaginationController : ControllerBase
     }
 
     /// <summary>
-    /// Performance comparison helper - run offset at different depths.
+    /// Smart pagination: Filter and paginate directly in SQL.
+    /// Only transfers the data you actually need.
     /// </summary>
-    [HttpGet("offset-benchmark")]
-    public async Task<ActionResult<ScenarioResponse<PaginationBenchmark>>> OffsetBenchmark(
-        [FromQuery] int pageSize = 20,
+    [HttpGet("sql-pagination")]
+    public async Task<ActionResult<ScenarioResponse<PaginatedResult<SalesWithSalesPerson>>>> SqlPagination(
+        [FromQuery] int salesPersonId = 1,
+        [FromQuery] int page = 0,
+        [FromQuery] int pageSize = 10,
+        [FromQuery] bool includeExecutionPlan = false,
         CancellationToken ct = default)
     {
         var response = await _executor.ExecuteAsync(
             "pagination",
-            "offset-benchmark",
-            "Benchmark offset pagination at various page depths",
+            "sql-pagination",
+            $"SQL pagination - filters and paginates in database for SalesPersonId {salesPersonId} (page {page}, size {pageSize})",
             async () =>
             {
-                var results = new PaginationBenchmark { PageSize = pageSize };
-                var pages = new[] { 1, 10, 100, 500, 1000, 2000 };
+                // Build query with projection
+                var query = _context.Sales
+                    .AsNoTracking()
+                    .Where(x => x.SalesPersonId == salesPersonId)
+                    .Select(x => new SalesWithSalesPerson
+                    {
+                        CustomerId = x.CustomerId,
+                        SalesId = x.SalesPersonId,
+                        ProductId = x.ProductId,
+                        Quantity = x.Quantity,
+                        SalesPersonId = x.SalesPersonId,
+                        SalesPersonFirstName = x.SalesPerson.FirstName,
+                        SalesPersonLastName = x.SalesPerson.LastName
+                    });
 
-                foreach (var page in pages)
+                // Count total records
+                var totalCount = await query.CountAsync(ct);
+
+                // Apply pagination in SQL
+                var paginatedData = await query
+                    .Skip(page * pageSize)
+                    .Take(pageSize)
+                    .ToListAsync(ct);
+
+                return new PaginatedResult<SalesWithSalesPerson>
                 {
-                    var sw = System.Diagnostics.Stopwatch.StartNew();
-                    
-                    await _context.Sales
-                        .AsNoTracking()
-                        .OrderByDescending(s => s.SaleDate)
-                        .Skip((page - 1) * pageSize)
-                        .Take(pageSize)
-                        .Select(s => s.SalesId)
-                        .ToListAsync(ct);
-                    
-                    sw.Stop();
-                    results.PageTimes.Add(new PageTimeSample { Page = page, DurationMs = sw.Elapsed.TotalMilliseconds });
-                }
-
-                return results;
-            });
+                    Data = paginatedData,
+                    Page = page,
+                    PageSize = pageSize,
+                    TotalCount = totalCount,
+                    TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize)
+                };
+            },
+            includeExecutionPlan);
 
         return Ok(response);
     }
 }
-
-public class SaleDto
-{
-    public int SalesId { get; set; }
-    public DateTime SaleDate { get; set; }
-    public decimal TotalAmount { get; set; }
-}
-
-public class KeysetPageResult
-{
-    public List<SaleDto> Data { get; set; } = new();
-    public PageCursor? NextCursor { get; set; }
-    public bool HasMore { get; set; }
-}
-
-public class PageCursor
-{
-    public DateTime SaleDate { get; set; }
-    public int SalesId { get; set; }
-}
-
-public class PaginationBenchmark
-{
-    public int PageSize { get; set; }
-    public List<PageTimeSample> PageTimes { get; set; } = new();
-}
-
-public class PageTimeSample
-{
-    public int Page { get; set; }
-    public double DurationMs { get; set; }
-}
-

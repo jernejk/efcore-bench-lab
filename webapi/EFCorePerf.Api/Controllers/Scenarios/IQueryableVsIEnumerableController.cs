@@ -45,7 +45,7 @@ public class IQueryableVsIEnumerableController : ControllerBase
                 // Count happens in C# memory after downloading everything
                 return new CountResult
                 {
-                    TotalInTable = await _context.Sales.CountAsync(ct),
+                    // TotalInTable = await _context.Sales.CountAsync(ct),
                     FilteredCount = allSales.Count,
                     FilterApplied = "Count all sales (but downloaded entire table)"
                 };

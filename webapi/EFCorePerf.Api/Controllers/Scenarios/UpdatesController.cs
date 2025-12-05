@@ -26,7 +26,7 @@ public class UpdatesController : ControllerBase
     /// Worst case: Load all entities, modify in loop, save.
     /// Results in N SELECT + N UPDATE statements.
     /// </summary>
-    [HttpPost("select-update-save")]
+    [HttpGet("select-update-save")]
     public async Task<ActionResult<ScenarioResponse<UpdateResult>>> SelectUpdateSave(
         [FromQuery] string category = "Electronics",
         [FromQuery] decimal priceIncrease = 1.00m,
@@ -70,7 +70,7 @@ public class UpdatesController : ControllerBase
     /// Good case: ExecuteUpdate - single SQL UPDATE statement.
     /// EF Core 7+ feature - no entity loading required.
     /// </summary>
-    [HttpPost("execute-update")]
+    [HttpGet("execute-update")]
     public async Task<ActionResult<ScenarioResponse<UpdateResult>>> ExecuteUpdate(
         [FromQuery] string category = "Electronics",
         [FromQuery] decimal priceIncrease = 1.00m,
@@ -180,7 +180,7 @@ public class UpdatesController : ControllerBase
     /// <summary>
     /// Reset prices to restore test data.
     /// </summary>
-    [HttpPost("reset-prices")]
+    [HttpGet("reset-prices")]
     public async Task<ActionResult<ScenarioResponse<UpdateResult>>> ResetPrices(
         [FromQuery] string category = "Electronics",
         CancellationToken ct = default)
