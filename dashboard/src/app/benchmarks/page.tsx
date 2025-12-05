@@ -40,6 +40,7 @@ import {
   type BenchmarkRun,
   type BenchmarkConfig,
   type EndpointRun,
+  type ProgressCallback,
 } from "@/lib/benchmark-store";
 import { BenchmarkComparisonDialog } from "@/components/benchmark-comparison-dialog";
 import { BenchmarkProgressOverlay, type BenchmarkProgress } from "@/components/benchmark-progress-overlay";
@@ -147,7 +148,8 @@ export default function BenchmarksPage() {
   const [selectedVariants, setSelectedVariants] = useState<string[]>([]);
   const [duration, setDuration] = useState("10s");
   const [concurrency, setConcurrency] = useState(5);
-  const [warmup, setWarmup] = useState(10);
+  const [warmup, setWarmup] = useState(1);
+  const [httpTimeout, setHttpTimeout] = useState(60);
 
   useEffect(() => {
     loadBenchmarks();
@@ -181,6 +183,7 @@ export default function BenchmarksPage() {
       duration,
       concurrency,
       warmupRequests: warmup,
+      httpTimeoutSeconds: httpTimeout,
     };
 
     const completedVariants: string[] = [];
@@ -191,7 +194,7 @@ export default function BenchmarksPage() {
         const variant = selectedVariants[i];
         const pendingVariants = selectedVariants.slice(i + 1);
         
-        // Update progress state
+        // Update progress state - start in warmup mode
         setProgressState({
           isRunning: true,
           currentVariant: variant,
@@ -202,10 +205,18 @@ export default function BenchmarksPage() {
           completedVariants: [...completedVariants],
           pendingVariants,
           duration,
+          isWarmingUp: true,
         });
         
         const endpoint = `/api/scenarios/${selectedScenario}/${variant}`;
-        const results = await runBenchmark(endpoint, config);
+        const results = await runBenchmark(endpoint, config, {
+          onWarmupStart: () => {
+            setProgressState(prev => prev ? { ...prev, isWarmingUp: true } : null);
+          },
+          onWarmupEnd: () => {
+            setProgressState(prev => prev ? { ...prev, isWarmingUp: false, variantStartTime: Date.now() } : null);
+          },
+        });
         
         runs.push({
           endpoint,
@@ -351,6 +362,19 @@ export default function BenchmarksPage() {
                   <SelectItem value="20">20 concurrent</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <div className="space-y-2">
+              <Label>HTTP Timeout (seconds)</Label>
+              <Input
+                type="number"
+                min={1}
+                max={300}
+                value={httpTimeout}
+                onChange={(e) => setHttpTimeout(Math.max(1, Math.min(300, parseInt(e.target.value) || 60)))}
+                placeholder="60"
+              />
             </div>
           </div>
 

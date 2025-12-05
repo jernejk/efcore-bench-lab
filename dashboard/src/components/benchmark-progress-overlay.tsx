@@ -14,6 +14,7 @@ export interface BenchmarkProgress {
   completedVariants: string[];
   pendingVariants: string[];
   duration: string;
+  isWarmingUp?: boolean;
 }
 
 interface BenchmarkProgressOverlayProps {
@@ -29,31 +30,49 @@ export function BenchmarkProgressOverlay({ progress }: BenchmarkProgressOverlayP
 
     const interval = setInterval(() => {
       setElapsedTime(Date.now() - progress.benchmarkStartTime);
-      setVariantElapsed(Date.now() - progress.variantStartTime);
+      // Only track elapsed time for the actual benchmark, not warmup
+      if (!progress.isWarmingUp) {
+        setVariantElapsed(Date.now() - progress.variantStartTime);
+      }
     }, 100);
 
     return () => clearInterval(interval);
-  }, [progress?.isRunning, progress?.benchmarkStartTime, progress?.variantStartTime]);
+  }, [progress?.isRunning, progress?.benchmarkStartTime, progress?.variantStartTime, progress?.isWarmingUp]);
+
+  // Reset variant elapsed when warmup starts
+  useEffect(() => {
+    if (progress?.isWarmingUp) {
+      setVariantElapsed(0);
+    }
+  }, [progress?.isWarmingUp, progress?.currentVariant]);
 
   if (!progress?.isRunning) return null;
 
   const durationMs = parseDuration(progress.duration);
-  const variantProgress = Math.min((variantElapsed / durationMs) * 100, 100);
+  // During warmup, show 0% progress for current variant
+  const variantProgress = progress.isWarmingUp ? 0 : Math.min((variantElapsed / durationMs) * 100, 100);
   const overallProgress = ((progress.currentVariantIndex + variantProgress / 100) / progress.totalVariants) * 100;
 
-  // Estimate remaining time
+  // Estimate remaining time - freeze during warmup
   const avgTimePerVariant = progress.currentVariantIndex > 0 
     ? (Date.now() - progress.benchmarkStartTime) / progress.currentVariantIndex
     : durationMs + 2000; // Add ~2s for warmup/overhead
-  const remainingVariants = progress.totalVariants - progress.currentVariantIndex - (variantProgress / 100);
-  const estimatedRemainingMs = remainingVariants * avgTimePerVariant;
+  const remainingVariants = progress.totalVariants - progress.currentVariantIndex - (progress.isWarmingUp ? 0 : variantProgress / 100);
+  const estimatedRemainingMs = progress.isWarmingUp 
+    ? remainingVariants * avgTimePerVariant + durationMs // Include current variant's full duration during warmup
+    : remainingVariants * avgTimePerVariant;
 
   return (
     <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
       <div className="bg-card border rounded-lg shadow-lg p-6 w-full max-w-md mx-4">
         <div className="flex items-center gap-3 mb-4">
           <Loader2 className="h-6 w-6 animate-spin text-primary" />
-          <h2 className="text-lg font-semibold">Running Benchmark</h2>
+          <div>
+            <h2 className="text-lg font-semibold">Running Benchmark</h2>
+            {progress.isWarmingUp && (
+              <p className="text-sm text-amber-500 font-medium">Warming up...</p>
+            )}
+          </div>
         </div>
 
         {/* Overall Progress */}
@@ -70,18 +89,23 @@ export function BenchmarkProgressOverlay({ progress }: BenchmarkProgressOverlayP
         </div>
 
         {/* Current Variant */}
-        <div className="mb-6 p-3 bg-muted/50 rounded-md">
+        <div className={`mb-6 p-3 rounded-md ${progress.isWarmingUp ? 'bg-amber-500/10 border border-amber-500/30' : 'bg-muted/50'}`}>
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium">
-              Testing: <code className="bg-primary/10 px-1.5 py-0.5 rounded text-primary">{progress.currentVariant}</code>
+              {progress.isWarmingUp ? 'Warming up: ' : 'Testing: '}
+              <code className={`px-1.5 py-0.5 rounded ${progress.isWarmingUp ? 'bg-amber-500/20 text-amber-600' : 'bg-primary/10 text-primary'}`}>{progress.currentVariant}</code>
             </span>
             <span className="text-xs text-muted-foreground">
               {progress.currentVariantIndex + 1} of {progress.totalVariants}
             </span>
           </div>
-          <Progress value={variantProgress} className="h-2" />
+          <Progress value={variantProgress} className={`h-2 ${progress.isWarmingUp ? '[&>div]:bg-amber-500' : ''}`} />
           <div className="text-xs text-muted-foreground mt-1">
-            {formatDuration(variantElapsed)} / {progress.duration}
+            {progress.isWarmingUp ? (
+              <span className="text-amber-600">Preparing endpoint...</span>
+            ) : (
+              <>{formatDuration(variantElapsed)} / {progress.duration}</>
+            )}
           </div>
         </div>
 

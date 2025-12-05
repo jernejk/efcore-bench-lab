@@ -30,6 +30,7 @@ export interface BenchmarkConfig {
   duration: string;
   concurrency: number;
   warmupRequests: number;
+  httpTimeoutSeconds: number;
 }
 
 export interface BenchmarkResults {
@@ -120,27 +121,42 @@ class BenchmarkStore {
 
 export const benchmarkStore = new BenchmarkStore();
 
+export interface ProgressCallback {
+  onWarmupStart?: () => void;
+  onWarmupEnd?: () => void;
+}
+
 // Utility functions
 export async function runBenchmark(
   endpoint: string,
-  config: BenchmarkConfig
+  config: BenchmarkConfig,
+  progressCallback?: ProgressCallback
 ): Promise<BenchmarkResults> {
-  const startTime = Date.now();
   let successCount = 0;
   let errorCount = 0;
   const latencies: number[] = [];
   const cpuSamples: number[] = [];
   const memorySamples: number[] = [];
 
-  // Warmup
+  const timeoutMs = (config.httpTimeoutSeconds ?? 60) * 1000;
+
+  // Warmup (before timing starts)
+  progressCallback?.onWarmupStart?.();
   for (let i = 0; i < config.warmupRequests; i++) {
     try {
-      await fetch(`http://localhost:5847${endpoint}`);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+      await fetch(`http://localhost:5847${endpoint}`, { signal: controller.signal });
+      clearTimeout(timeoutId);
     } catch {
       // Ignore warmup errors
     }
   }
+  progressCallback?.onWarmupEnd?.();
 
+  // Start timing AFTER warmup completes
+  const startTime = Date.now();
+  
   // Parse duration (e.g., "10s" -> 10000ms)
   const durationMs = parseDuration(config.duration);
   const endTime = startTime + durationMs;
@@ -166,7 +182,10 @@ export async function runBenchmark(
       while (Date.now() < endTime) {
         const reqStart = Date.now();
         try {
-          const response = await fetch(`http://localhost:5847${endpoint}`);
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+          const response = await fetch(`http://localhost:5847${endpoint}`, { signal: controller.signal });
+          clearTimeout(timeoutId);
           if (response.ok) {
             successCount++;
             latencies.push(Date.now() - reqStart);
