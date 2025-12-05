@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   Sidebar,
   SidebarContent,
@@ -11,6 +12,9 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
 import {
   Database,
@@ -26,6 +30,8 @@ import {
   GitCompare,
   Bot,
   Presentation,
+  ChevronDown,
+  ChevronRight,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -69,6 +75,27 @@ const scenarioItems = [
   },
 ];
 
+const dddBrisbaneItems = [
+  {
+    title: "IQueryable vs IEnumerable",
+    url: "/scenarios/iqueryable-vs-ienumerable",
+    icon: Database,
+    description: "ToList().Count vs Count() performance",
+  },
+  {
+    title: "AsNoTracking",
+    url: "/scenarios/asnotracking",
+    icon: RefreshCw,
+    description: "Change tracking impact on performance",
+  },
+  {
+    title: "Implicit Include",
+    url: "/scenarios/implicit-include",
+    icon: Layers,
+    description: "Include vs Select projection patterns",
+  },
+];
+
 const toolItems = [
   {
     title: "Compare",
@@ -94,6 +121,7 @@ const toolItems = [
 
 export function AppSidebar() {
   const pathname = usePathname();
+  const [dddBrisbaneOpen, setDddBrisbaneOpen] = useState(false);
 
   return (
     <Sidebar>
@@ -138,6 +166,44 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>DDD Brisbane</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  onClick={() => setDddBrisbaneOpen(!dddBrisbaneOpen)}
+                  tooltip="Toggle DDD Brisbane scenarios"
+                >
+                  {dddBrisbaneOpen ? (
+                    <ChevronDown className="h-4 w-4" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4" />
+                  )}
+                  <span>PowerPoint Demos</span>
+                </SidebarMenuButton>
+                {dddBrisbaneOpen && (
+                  <SidebarMenuSub>
+                    {dddBrisbaneItems.map((item) => (
+                      <SidebarMenuSubItem key={item.title}>
+                        <SidebarMenuSubButton
+                          asChild
+                          isActive={pathname === item.url}
+                        >
+                          <Link href={item.url}>
+                            <item.icon />
+                            <span>{item.title}</span>
+                          </Link>
+                        </SidebarMenuSubButton>
+                      </SidebarMenuSubItem>
+                    ))}
+                  </SidebarMenuSub>
+                )}
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
