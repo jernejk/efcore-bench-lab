@@ -53,6 +53,19 @@ npm run dev
 
 Dashboard will be available at: http://localhost:3847
 
+## Codex Cloud
+
+For a Codex cloud environment, use:
+
+- Container image: `universal`
+- Preinstalled package: `Node.js 20`
+- Setup script mode: `Manual`
+- Setup script: `bash scripts/codex-cloud-setup.sh`
+
+The setup script installs `.NET 10` into `$HOME/.dotnet`, persists `DOTNET_ROOT` and `PATH` for the agent phase, restores/builds the Web API, and runs `npm ci` for the dashboard.
+
+If you want Codex to download dependencies during setup, the built-in `Common dependencies` internet allowlist is enough for this repo.
+
 ## Architecture
 
 ```
@@ -146,4 +159,3 @@ Created by [JK](https://github.com/jernejk) (Jernej Kavka)
 ## GitHub Repo
 
 `efcore-bench-lab` - Bench build your EF Core queries, swap components, and test performance.
-
