@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/EfCoreBenchLab.Api/EfCoreBenchLab.Api.csproj" />
+    <Project Path="src/EfCoreBenchLab.AppHost/EfCoreBenchLab.AppHost.csproj" />
+    <Project Path="src/EfCoreBenchLab.Diagnostics/EfCoreBenchLab.Diagnostics.csproj" />
+    <Project Path="src/EfCoreBenchLab.ServiceDefaults/EfCoreBenchLab.ServiceDefaults.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/EfCoreBenchLab.Diagnostics.Tests/EfCoreBenchLab.Diagnostics.Tests.csproj" />
+  </Folder>
+</Solution>
