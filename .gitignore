@@ -482,3 +482,4 @@ $RECYCLE.BIN/
 *.swp
 
 .playwright-mcp
+docs/visuals/

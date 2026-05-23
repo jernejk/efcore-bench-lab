@@ -15,6 +15,13 @@ The repository is split so the package is the product and the runnable app is a 
 - `samples/EfCoreBenchLab.ServiceDefaults` contains the Aspire/OpenTelemetry defaults for the sample host.
 - `skills/` contains operator skills for AI agents.
 
+## Documentation
+
+- [Docs index](docs/README.md)
+- [Adoption guide](docs/adoption-guide.md) - add the diagnostics package to another ASP.NET Core + EF Core project.
+- [Investigation workflow](docs/investigation-workflow.md) - use Aspire logs/OpenTelemetry to diagnose a captured request.
+- [Sample diagnosis](docs/sample-wildcard-search-diagnosis.md) - explain the intentionally bad wildcard-search query.
+
 ## Add To Another Project
 
 Use the diagnostics package in the target Web API, not the demo API. The minimum integration is:
