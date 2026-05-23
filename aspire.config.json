@@ -1,5 +1,5 @@
 {
   "appHost": {
-    "path": "src/EfCoreBenchLab.AppHost/EfCoreBenchLab.AppHost.csproj"
+    "path": "samples/EfCoreBenchLab.AppHost/EfCoreBenchLab.AppHost.csproj"
   }
 }

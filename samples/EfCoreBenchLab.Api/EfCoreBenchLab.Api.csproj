@@ -12,7 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../EfCoreBenchLab.Diagnostics/EfCoreBenchLab.Diagnostics.csproj" />
+    <ProjectReference Include="../../src/EfCoreBenchLab.Diagnostics/EfCoreBenchLab.Diagnostics.csproj" />
     <ProjectReference Include="../EfCoreBenchLab.ServiceDefaults/EfCoreBenchLab.ServiceDefaults.csproj" />
   </ItemGroup>
 

@@ -4,14 +4,15 @@ EF Core Bench Lab is a small Aspire-driven demo for collecting EF Core query tel
 
 The useful part is the diagnostics package and the agent skills. The lab app is only a proving ground: the intended workflow is to add the package to another ASP.NET Core + EF Core project, tag suspicious queries, trigger actual-plan capture with an HTTP header, then let an AI agent inspect Aspire logs and trace the bad plan back to source code.
 
-The app is intentionally shaped like a production service:
+The repository is split so the package is the product and the runnable app is a consumer sample:
 
-- `src/EfCoreBenchLab.AppHost` orchestrates SQL Server and the API with Aspire 13.3.5.
-- `src/EfCoreBenchLab.Api` exposes demo endpoints and seeds deterministic SQL Server data.
 - `src/EfCoreBenchLab.Diagnostics` is a packable NuGet-style class library with:
   - ASP.NET Core middleware that reads `X-EF-Include-Execution-Plan`.
   - an EF Core SQL Server interceptor that captures actual execution plans only for opted-in requests.
   - `TagWithContext(...)` query tagging that records source file, member, and line in SQL comments.
+- `samples/EfCoreBenchLab.AppHost` orchestrates SQL Server and the sample API with Aspire 13.3.5.
+- `samples/EfCoreBenchLab.Api` shows how an application wires the diagnostics package, exposes demo endpoints, and seeds deterministic SQL Server data.
+- `samples/EfCoreBenchLab.ServiceDefaults` contains the Aspire/OpenTelemetry defaults for the sample host.
 - `skills/` contains operator skills for AI agents.
 
 ## Add To Another Project
@@ -87,7 +88,7 @@ Use the repo-local skills in this order:
 ```bash
 dotnet restore
 dotnet build
-aspire run --apphost src/EfCoreBenchLab.AppHost/EfCoreBenchLab.AppHost.csproj --non-interactive --nologo
+aspire run --apphost samples/EfCoreBenchLab.AppHost/EfCoreBenchLab.AppHost.csproj --non-interactive --nologo
 ```
 
 The API is exposed by Aspire. Use `aspire describe --format Json` to discover the exact endpoint.
