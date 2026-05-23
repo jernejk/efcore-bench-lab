@@ -1,161 +1,158 @@
 # EF Core Bench Lab
 
-Interactive EF Core Query Performance Lab - Swap components, test scenarios, and benchmark performance. A lab for experimenting with EF Core query patterns and best practices.
+EF Core Bench Lab is a small Aspire-driven demo for collecting EF Core query telemetry through Aspire logs and OpenTelemetry.
 
-## Quick Start
+The useful part is the diagnostics package and the agent skills. The lab app is only a proving ground: the intended workflow is to add the package to another ASP.NET Core + EF Core project, tag suspicious queries, trigger actual-plan capture with an HTTP header, then let an AI agent inspect Aspire logs and trace the bad plan back to source code.
 
-### Prerequisites
+The repository is split so the package is the product and the runnable app is a consumer sample:
 
-- .NET 10 SDK
-- Node.js 20+
-- Docker Desktop
-- (Optional) LM Studio for AI features
+- `src/EfCoreBenchLab.Diagnostics` is a packable NuGet-style class library with:
+  - ASP.NET Core middleware that reads `X-EF-Include-Execution-Plan`.
+  - an EF Core SQL Server interceptor that captures actual execution plans only for opted-in requests.
+  - `TagWithContext(...)` query tagging that records source class, member, and line in SQL comments.
+- `samples/EfCoreBenchLab.AppHost` orchestrates SQL Server and the sample API with Aspire 13.3.5.
+- `samples/EfCoreBenchLab.Api` shows how an application wires the diagnostics package, exposes demo endpoints, and seeds deterministic SQL Server data.
+- `samples/EfCoreBenchLab.ServiceDefaults` contains the Aspire/OpenTelemetry defaults for the sample host.
+- `skills/` contains operator skills for AI agents.
 
-### 1. Start SQL Server
+## Documentation
 
-```bash
-cd db
-docker-compose up -d
-```
+- [Docs index](docs/README.md)
+- [Adoption guide](docs/adoption-guide.md) - add the diagnostics package to another ASP.NET Core + EF Core project.
+- [Investigation workflow](docs/investigation-workflow.md) - use Aspire logs/OpenTelemetry to diagnose a captured request.
+- [Sample diagnosis](docs/sample-wildcard-search-diagnosis.md) - explain the intentionally bad wildcard-search query.
 
-### 2. Seed the Database
+## Add To Another Project
 
-```bash
-# Run the seed scripts
-./scripts/seed-database.sh
+Use the diagnostics package in the target Web API, not the demo API. The minimum integration is:
 
-# Or manually:
-docker exec -i efcore-perf-sqlserver /opt/mssql-tools18/bin/sqlcmd \
-    -S localhost -U sa -P 'YourStrong@Passw0rd' -C \
-    -i /docker-entrypoint-initdb.d/01-create-database.sql
-
-docker exec -i efcore-perf-sqlserver /opt/mssql-tools18/bin/sqlcmd \
-    -S localhost -U sa -P 'YourStrong@Passw0rd' -C \
-    -i /docker-entrypoint-initdb.d/02-seed-data.sql
-```
-
-### 3. Start WebAPI
-
-```bash
-cd webapi/EFCorePerf.Api
-dotnet run
-```
-
-WebAPI will be available at: http://localhost:5847
-
-### 4. Start Dashboard
-
-```bash
-cd dashboard
-npm install
-npm run dev
-```
-
-Dashboard will be available at: http://localhost:3847
-
-## Codex Cloud
-
-For a Codex cloud environment, use:
-
-- Container image: `universal`
-- Preinstalled package: `Node.js 20`
-- Setup script mode: `Manual`
-- Setup script: `bash scripts/codex-cloud-setup.sh`
-
-The setup script installs `.NET 10` into `$HOME/.dotnet`, persists `DOTNET_ROOT` and `PATH` for the agent phase, restores/builds the Web API, and runs `npm ci` for the dashboard.
-
-If you want Codex to download dependencies during setup, the built-in `Common dependencies` internet allowlist is enough for this repo.
-
-## Architecture
-
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                         Browser                                      │
-│                    http://localhost:3847                             │
-└─────────────────────────────┬───────────────────────────────────────┘
-                              │
-┌─────────────────────────────▼───────────────────────────────────────┐
-│                    Next.js Dashboard                                 │
-│  • React UI with Charts, Markdown, Tables                           │
-│  • AI Analysis (LM Studio / OpenAI / Azure OpenAI)                  │
-└──────────────────────────────┬──────────────────────────────────────┘
-                               │
-┌──────────────────────────────▼──────────────────────────────────────┐
-│                    .NET 10 WebAPI                                    │
-│                    http://localhost:5847                             │
-│  • EF Core 10 with SQL Server                                       │
-│  • OpenTelemetry instrumentation                                    │
-│  • Query logging and execution plan capture                         │
-└──────────────────────────────┬──────────────────────────────────────┘
-                               │
-┌──────────────────────────────▼──────────────────────────────────────┐
-│                    SQL Server 2022                                   │
-│                    localhost:11433                                   │
-│  • SalesDB with 100K+ records                                       │
-└─────────────────────────────────────────────────────────────────────┘
-```
-
-## Scenarios
-
-| Scenario | Description | Key Learning |
-|----------|-------------|--------------|
-| N+1 Problem | Loop queries vs projections | Query count: 101 → 1 |
-| Pagination | Offset vs keyset | Constant time vs O(n) |
-| Tracking | AsNoTracking, projections | Memory & speed improvements |
-| Bulk Updates | ExecuteUpdate vs traditional | Orders of magnitude faster |
-| Cancellation | CancellationToken usage | Prevent resource waste |
-| ToList Trap | IQueryable vs IEnumerable | Client-side evaluation |
-
-## API Endpoints
-
-### Meta
-- `GET /api/meta/health` - Health check
-- `GET /api/meta/info` - Server information
-- `GET /api/meta/query-log/{requestId}` - Get queries for a request
-- `GET /api/meta/query-log` - Get recent queries
-
-### Scenarios
-- `GET /api/scenarios/{scenario}/{variant}` - Run a scenario variant
-- Add `?includeExecutionPlan=true` to capture execution plan (slower)
-
-## Configuration
-
-### WebAPI (appsettings.json)
-```json
+```csharp
+builder.Services.AddEfCoreBenchLabDiagnostics(options =>
 {
-  "ConnectionStrings": {
-    "SalesDb": "Server=localhost,11433;Database=SalesDB;User Id=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=True"
-  }
-}
+    options.ExecutionPlanHeaderName = "X-EF-Include-Execution-Plan";
+});
+
+builder.Services.AddDbContextPool<AppDbContext>((serviceProvider, options) =>
+{
+    options.UseSqlServer(builder.Configuration.GetConnectionString("database"), sqlOptions =>
+    {
+        sqlOptions.CommandTimeout(120);
+
+        // Do not enable retry buffering for contexts that capture actual plans.
+        // sqlOptions.EnableRetryOnFailure(3);
+    });
+
+    options.UseEfCoreBenchLabDiagnostics(serviceProvider);
+});
+
+app.UseEfCoreBenchLabDiagnostics();
 ```
 
-### Dashboard
-Configure via Settings page or environment variables:
-- `NEXT_PUBLIC_WEBAPI_URL` - WebAPI base URL
-- `OPENAI_API_KEY` - OpenAI API key
-- `AZURE_OPENAI_ENDPOINT` - Azure OpenAI endpoint
-- `AZURE_OPENAI_API_KEY` - Azure OpenAI API key
+If the target project uses Aspire SQL Server EF Core enrichment, disable retry buffering for the instrumented context:
 
-## Ports
+```csharp
+builder.EnrichSqlServerDbContext<AppDbContext>(settings =>
+{
+    settings.DisableRetry = true;
+});
+```
 
-| Service | Port |
-|---------|------|
-| Dashboard | 3847 |
-| WebAPI | 5847 |
-| SQL Server | 11433 |
-| LM Studio | 1234 |
-| Aspire Dashboard | 18888 |
+Tag queries that should be easy to find later:
 
-## License
+```csharp
+var rows = await db.Orders
+    .TagWithContext("Orders search")
+    .Where(order => order.Status != "Cancelled")
+    .ToListAsync(cancellationToken);
+```
 
-MIT
+Then run the real application through Aspire and call a real endpoint with the capture header:
 
-## Author
+```bash
+curl -H "X-EF-Include-Execution-Plan: true" "https://localhost:<port>/<real-endpoint>"
+aspire logs <api-resource-name> --tail 200 --timestamps
+aspire otel logs <api-resource-name> --limit 100 --format Json
+aspire otel spans <api-resource-name> --limit 100 --format Json
+```
 
-Created by [JK](https://github.com/jernejk) (Jernej Kavka)
+The fields the skills expect are:
 
-© 2025 Jernej Kavka (JK). All rights reserved.
+- `request_id`
+- `include_execution_plan`
+- `tag_context`
+- `source`
+- `execution_plan_xml`
 
-## GitHub Repo
+Use the repo-local skills in this order:
 
-`efcore-bench-lab` - Bench build your EF Core queries, swap components, and test performance.
+1. `skills/efcore-diagnostics-install` - add the middleware, interceptor, retry-buffering guard, and query tags to the target project.
+2. `skills/efcore-aspire-log-investigator` - trigger the real endpoint with the header and inspect Aspire logs/OpenTelemetry.
+3. `skills/efcore-source-locator` - map `efbench.source` back to the class/member/line and explain the code shape.
+4. `skills/efcore-scenario-tester` - smoke-test this lab or adapt the same checks to the target project's endpoints.
+
+## Run
+
+```bash
+dotnet restore
+dotnet build
+aspire run --apphost samples/EfCoreBenchLab.AppHost/EfCoreBenchLab.AppHost.csproj --non-interactive --nologo
+```
+
+The API is exposed by Aspire. Use `aspire describe --format Json` to discover the exact endpoint.
+
+## Scenario Endpoints
+
+Normal scenarios:
+
+- `/scenarios/normal/customer-orders?customerId=42&pageSize=25`
+- `/scenarios/normal/recent-paid-orders?page=0&pageSize=25`
+
+Bad scenarios:
+
+- `/scenarios/bad/wildcard-search?search=road&page=25&pageSize=25` - computed text search across joined tables, then sort/page.
+- `/scenarios/bad/over-fetching?search=road&fetchCount=20000&page=0&pageSize=25` - broad joined fetch, then application-side filter/page.
+- `/scenarios/bad/n-plus-one?region=Queensland&customerCount=8` - one customer query, then two order queries per customer.
+
+Legacy aliases are still available:
+
+- `/scenarios/healthy-query?customerId=42&pageSize=25`
+- `/scenarios/deep-bad-query?search=road&page=25&pageSize=25`
+
+## Trigger the demo
+
+Call the bad query without the header:
+
+```bash
+curl "http://localhost:<api-port>/scenarios/bad/wildcard-search?search=road&page=25&pageSize=25"
+```
+
+Call it with actual execution-plan capture:
+
+```bash
+curl -H "X-EF-Include-Execution-Plan: true" \
+  "http://localhost:<api-port>/scenarios/bad/wildcard-search?search=road&page=25&pageSize=25"
+```
+
+Then inspect logs and telemetry:
+
+```bash
+aspire logs api --tail 200 --timestamps
+aspire otel logs api --limit 100 --format Json
+aspire otel spans api --limit 100 --format Json
+```
+
+The important log fields are:
+
+- `request_id`
+- `include_execution_plan`
+- `tag_context`
+- `source`
+- `execution_plan_xml`
+
+The source tag narrows the bad query to the class/member/line that called `TagWithContext(...)`.
+
+## Expected Diagnosis Signals
+
+- Wildcard search: execution plan shows broad scans, computed `LOWER(...) LIKE '%term%'`, sort before paging, and a source tag for `DeepBadOrderSearch`.
+- Over-fetching: one broad joined query returns thousands of rows; API metrics show `fetchedRows` much larger than returned rows.
+- N+1: a single request has many EF command logs with repeated `NPlusOneOrderCount` and `NPlusOneLatestOrder` tags.
