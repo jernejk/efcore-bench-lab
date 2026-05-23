@@ -52,7 +52,7 @@ var rows = await db.Orders
     .ToListAsync();
 ```
 
-`TagWithContext` adds SQL comments containing the investigation context plus source file, member, and line. The source comment is what lets an AI agent narrow a bad plan back to the original LINQ query.
+`TagWithContext` adds SQL comments containing the investigation context plus source class, member, and line. The source comment is what lets an AI agent narrow a bad plan back to the original LINQ query without leaking absolute build-machine paths.
 
 ## Investigate With Aspire
 

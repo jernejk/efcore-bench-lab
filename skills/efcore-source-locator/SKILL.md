@@ -8,28 +8,28 @@ Use this skill when an Aspire log or OpenTelemetry record contains an EF Core Be
 
 ```sql
 -- efbench.context:DeepBadOrderSearch: wildcard text search across joined order data
--- efbench.source:src/MyApp/Orders/OrderSearchRepository.cs:SearchAsync:24
+-- efbench.source:OrderSearchRepository:SearchAsync:24
 ```
 
 The source value is:
 
 ```text
-<path>:<member>:<line>
+<class>:<member>:<line>
 ```
 
 ## Locate the code
 
-Open the file and line from the tag. If the file path is partial, search for it from the target repository root:
+Search for the class and member from the target repository root:
 
 ```bash
-rg -n "SearchAsync|OrdersSearch" src
+rg -n "class OrderSearchRepository|SearchAsync|OrdersSearch" src samples
 ```
 
 When reporting findings, include:
 
 - the request id
 - the query context
-- the source file/member/line
+- the source class/member/line
 - the plan symptom, such as scan, sort, key lookup, high reads, or missing useful index
 - the smallest code or schema change that would address the performance issue
 

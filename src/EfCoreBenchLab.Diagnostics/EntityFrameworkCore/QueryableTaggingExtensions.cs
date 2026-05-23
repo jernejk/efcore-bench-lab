@@ -41,18 +41,10 @@ internal static class SourceLocationFormatter
         }
 
         var normalized = sourceFilePath.Replace('\\', '/');
-        var srcIndex = normalized.IndexOf("/src/", StringComparison.OrdinalIgnoreCase);
-        if (srcIndex >= 0)
-        {
-            return normalized[(srcIndex + 1)..];
-        }
+        var fileName = normalized[(normalized.LastIndexOf('/') + 1)..];
 
-        var testsIndex = normalized.IndexOf("/tests/", StringComparison.OrdinalIgnoreCase);
-        if (testsIndex >= 0)
-        {
-            return normalized[(testsIndex + 1)..];
-        }
-
-        return normalized;
+        return Path.GetFileNameWithoutExtension(fileName) is { Length: > 0 } className
+            ? className
+            : "unknown";
     }
 }

@@ -6,8 +6,8 @@ The intended production-like behavior is:
 
 1. Execution-plan capture is off by default.
 2. A diagnostic HTTP header opts in one request.
-3. EF Core commands in that request are tagged with query context and source location.
-4. Aspire logs/OpenTelemetry contain the request id, SQL tag, source location, and execution-plan XML.
+3. EF Core commands in that request are tagged with query context and source class/member/line.
+4. Aspire logs/OpenTelemetry contain the request id, SQL tag, source class/member/line, and execution-plan XML.
 5. An agent uses the emitted data to find the LINQ query that caused the problem.
 
 ## Install
@@ -107,7 +107,7 @@ var rows = await db.Orders
 `TagWithContext` emits SQL comments with:
 
 - `efbench.context` - a stable, searchable operation name.
-- `efbench.source` - source file, member, and line.
+- `efbench.source` - source class, member, and line.
 
 This is the link between the execution plan and the original LINQ query.
 

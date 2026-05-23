@@ -1,8 +1,8 @@
 namespace EfCoreBenchLab.Diagnostics.EntityFrameworkCore;
 
-public sealed record QuerySourceLocation(string Path, string Member, int Line)
+public sealed record QuerySourceLocation(string ClassName, string Member, int Line)
 {
-    public override string ToString() => $"{Path}:{Member}:{Line}";
+    public override string ToString() => $"{ClassName}:{Member}:{Line}";
 
     public static QuerySourceLocation? Parse(string? value)
     {

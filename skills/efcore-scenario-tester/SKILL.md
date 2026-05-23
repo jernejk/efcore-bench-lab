@@ -30,7 +30,7 @@ Generic project:
 - The request log includes `include_execution_plan=true`.
 - EF command logs include the expected `tag_context`.
 - The execution-plan log includes `execution_plan_xml`.
-- The `source` points to the expected file/member/line.
+- The `source` points to the expected class/member/line.
 
 Lab endpoints:
 
@@ -38,4 +38,4 @@ Lab endpoints:
 - Over-fetching: `OverFetchingOrders` and response metrics where `fetchedRows` is much higher than `returned`.
 - N+1: repeated `NPlusOneOrderCount` and `NPlusOneLatestOrder` commands under one request id.
 
-Report whether the skill can identify the request id, query tag, source file/member/line, and likely remediation.
+Report whether the skill can identify the request id, query tag, source class/member/line, and likely remediation.

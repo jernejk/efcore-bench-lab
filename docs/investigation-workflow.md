@@ -80,7 +80,7 @@ A useful captured record should answer:
 | --- | --- |
 | `request_id` | Correlates HTTP request, EF commands, spans, and plan capture. |
 | `tag_context` | Names the query or business operation. |
-| `source` | Points to the file/member/line that added `TagWithContext`. |
+| `source` | Points to the class/member/line that added `TagWithContext`. |
 | `duration_ms` | Gives a first-order impact signal for the command. |
 | `execution_plan_xml` | Contains SQL Server actual execution-plan operators and runtime row counts. |
 
@@ -100,10 +100,10 @@ A useful captured record should answer:
 Use the `efbench.source` value:
 
 ```text
-samples/EfCoreBenchLab.Api/Features/Orders/OrderSearchRepository.cs:SearchWithKnownPerformanceProblemAsync:44
+OrderSearchRepository:SearchWithKnownPerformanceProblemAsync:44
 ```
 
-Open that file and line, then map the SQL/plan symptoms back to the LINQ expression. Report the smallest fix that changes the query shape, index strategy, or search design.
+Search for that class and member, then map the SQL/plan symptoms back to the LINQ expression. Report the smallest fix that changes the query shape, index strategy, or search design.
 
 ## Reporting Template
 

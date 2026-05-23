@@ -70,7 +70,7 @@ var rows = await db.Orders
     .ToListAsync(cancellationToken);
 ```
 
-`TagWithContext` adds source file, member, and line comments to the generated SQL.
+`TagWithContext` adds source class, member, and line comments to the generated SQL without emitting absolute build-machine paths.
 
 ## Verification
 

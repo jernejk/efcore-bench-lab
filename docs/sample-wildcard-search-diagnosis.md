@@ -34,7 +34,7 @@ The emitted SQL contains comments like:
 
 ```sql
 -- efbench.context:DeepBadOrderSearch: wildcard text search across joined order data
--- efbench.source:samples/EfCoreBenchLab.Api/Features/Orders/OrderSearchRepository.cs:SearchWithKnownPerformanceProblemAsync:44
+-- efbench.source:OrderSearchRepository:SearchWithKnownPerformanceProblemAsync:44
 ```
 
 Those comments let an agent move from Aspire logs to the exact LINQ chain.
@@ -75,7 +75,7 @@ A useful investigation should find:
 
 - `include_execution_plan=true`
 - `tag_context=DeepBadOrderSearch: wildcard text search across joined order data`
-- `source=samples/EfCoreBenchLab.Api/Features/Orders/OrderSearchRepository.cs:SearchWithKnownPerformanceProblemAsync:<line>`
+- `source=OrderSearchRepository:SearchWithKnownPerformanceProblemAsync:<line>`
 - `execution_plan_xml=<ShowPlanXML ...>`
 
 In the execution plan, look for:

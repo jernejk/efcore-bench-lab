@@ -9,7 +9,7 @@ The repository is split so the package is the product and the runnable app is a 
 - `src/EfCoreBenchLab.Diagnostics` is a packable NuGet-style class library with:
   - ASP.NET Core middleware that reads `X-EF-Include-Execution-Plan`.
   - an EF Core SQL Server interceptor that captures actual execution plans only for opted-in requests.
-  - `TagWithContext(...)` query tagging that records source file, member, and line in SQL comments.
+  - `TagWithContext(...)` query tagging that records source class, member, and line in SQL comments.
 - `samples/EfCoreBenchLab.AppHost` orchestrates SQL Server and the sample API with Aspire 13.3.5.
 - `samples/EfCoreBenchLab.Api` shows how an application wires the diagnostics package, exposes demo endpoints, and seeds deterministic SQL Server data.
 - `samples/EfCoreBenchLab.ServiceDefaults` contains the Aspire/OpenTelemetry defaults for the sample host.
@@ -87,7 +87,7 @@ Use the repo-local skills in this order:
 
 1. `skills/efcore-diagnostics-install` - add the middleware, interceptor, retry-buffering guard, and query tags to the target project.
 2. `skills/efcore-aspire-log-investigator` - trigger the real endpoint with the header and inspect Aspire logs/OpenTelemetry.
-3. `skills/efcore-source-locator` - map `efbench.source` back to the file/member/line and explain the code shape.
+3. `skills/efcore-source-locator` - map `efbench.source` back to the class/member/line and explain the code shape.
 4. `skills/efcore-scenario-tester` - smoke-test this lab or adapt the same checks to the target project's endpoints.
 
 ## Run
@@ -149,7 +149,7 @@ The important log fields are:
 - `source`
 - `execution_plan_xml`
 
-The source tag narrows the bad query to the file/member/line that called `TagWithContext(...)`.
+The source tag narrows the bad query to the class/member/line that called `TagWithContext(...)`.
 
 ## Expected Diagnosis Signals
 
