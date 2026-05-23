@@ -1,0 +1,1270 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DeepBadOrderSearch Visual Experiments</title>
+  <link rel="icon" href="data:,">
+  <style>
+    :root {
+      --bg: oklch(0.96 0.018 87);
+      --ink: oklch(0.18 0.025 248);
+      --muted: oklch(0.43 0.028 248);
+      --panel: oklch(0.995 0.005 87);
+      --panel-2: oklch(0.92 0.019 87);
+      --border: oklch(0.78 0.025 87);
+      --blue: oklch(0.48 0.18 238);
+      --teal: oklch(0.52 0.14 175);
+      --red: oklch(0.54 0.21 30);
+      --orange: oklch(0.67 0.16 67);
+      --green: oklch(0.51 0.16 145);
+      --violet: oklch(0.47 0.16 292);
+      --code: oklch(0.17 0.025 248);
+      --code-ink: oklch(0.94 0.015 87);
+      --shadow: 0 24px 80px color-mix(in oklab, var(--ink) 14%, transparent);
+      --radius: 8px;
+      --font-sans: Avenir Next, Segoe UI, system-ui, sans-serif;
+      --font-serif: Iowan Old Style, Charter, Georgia, serif;
+      --font-mono: SFMono-Regular, Consolas, Liberation Mono, monospace;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background:
+        linear-gradient(90deg, color-mix(in oklab, var(--border) 35%, transparent) 1px, transparent 1px),
+        linear-gradient(color-mix(in oklab, var(--border) 35%, transparent) 1px, transparent 1px),
+        var(--bg);
+      background-size: 42px 42px;
+      font-family: var(--font-sans);
+      line-height: 1.5;
+    }
+
+    main {
+      width: min(1320px, calc(100vw - 40px));
+      margin: 0 auto;
+      padding: 38px 0 72px;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.9fr);
+      gap: 28px;
+      align-items: stretch;
+      margin-bottom: 22px;
+    }
+
+    .hero-card,
+    .control-card,
+    .tab-shell,
+    .panel,
+    .stat,
+    .callout,
+    .step-card,
+    .operator-card {
+      background: color-mix(in oklab, var(--panel) 94%, white);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .hero-card {
+      padding: 32px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-card::after {
+      content: "";
+      position: absolute;
+      inset: auto -60px -80px auto;
+      width: 280px;
+      height: 280px;
+      border: 28px solid color-mix(in oklab, var(--blue) 14%, transparent);
+      transform: rotate(16deg);
+    }
+
+    .eyebrow {
+      color: var(--blue);
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    h1,
+    h2,
+    h3 {
+      margin: 0;
+      letter-spacing: 0;
+      line-height: 1.05;
+    }
+
+    h1 {
+      max-width: 920px;
+      margin-top: 12px;
+      font-family: var(--font-serif);
+      font-size: clamp(3rem, 7vw, 6.8rem);
+      font-weight: 700;
+    }
+
+    h2 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.8rem, 3vw, 3.2rem);
+      margin-bottom: 16px;
+    }
+
+    h3 {
+      font-size: 1rem;
+      margin-bottom: 8px;
+    }
+
+    p { margin: 0; color: var(--muted); }
+
+    .lead {
+      max-width: 780px;
+      margin-top: 18px;
+      font-size: 1.14rem;
+    }
+
+    .chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 24px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 36px;
+      padding: 7px 11px;
+      border: 1.5px solid var(--border);
+      border-radius: 999px;
+      background: var(--panel);
+      color: var(--ink);
+      font-family: var(--font-mono);
+      font-size: 0.76rem;
+      white-space: nowrap;
+    }
+
+    .chip strong { color: var(--blue); }
+
+    .control-card {
+      padding: 24px;
+      display: grid;
+      gap: 18px;
+      align-content: start;
+    }
+
+    .control-title {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      align-items: baseline;
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    .step-copy {
+      min-height: 76px;
+      font-size: 1rem;
+      color: var(--ink);
+    }
+
+    .step-actions {
+      display: grid;
+      grid-template-columns: 44px 1fr 44px;
+      gap: 10px;
+      align-items: center;
+    }
+
+    button {
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--panel);
+      color: var(--ink);
+      font: inherit;
+      cursor: pointer;
+    }
+
+    button:hover,
+    button:focus-visible {
+      border-color: var(--blue);
+      outline: none;
+    }
+
+    .icon-btn {
+      height: 44px;
+      font-family: var(--font-mono);
+      font-weight: 800;
+    }
+
+    .progress {
+      height: 10px;
+      border-radius: 999px;
+      background: var(--panel-2);
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+
+    .progress span {
+      display: block;
+      height: 100%;
+      width: var(--progress, 14%);
+      background: linear-gradient(90deg, var(--blue), var(--teal), var(--orange));
+      transition: width 240ms ease;
+    }
+
+    .tabs {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 8px;
+      margin: 0 0 18px;
+      padding: 10px;
+      background: color-mix(in oklab, var(--bg) 88%, transparent);
+      backdrop-filter: blur(12px);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+    }
+
+    .tab-button {
+      min-height: 46px;
+      padding: 8px 12px;
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .tab-button[aria-selected="true"] {
+      background: var(--ink);
+      border-color: var(--ink);
+      color: white;
+    }
+
+    .tab-shell { padding: 24px; }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    .section-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 22px;
+      align-items: end;
+      margin-bottom: 18px;
+    }
+
+    .section-head p { max-width: 680px; }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    .stat {
+      padding: 18px;
+      box-shadow: none;
+    }
+
+    .stat .value {
+      font-family: var(--font-serif);
+      font-size: 2.7rem;
+      line-height: 1;
+    }
+
+    .stat .label {
+      margin-top: 8px;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .danger { color: var(--red); }
+    .warn { color: var(--orange); }
+    .ok { color: var(--green); }
+    .blue { color: var(--blue); }
+
+    .impact-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 340px;
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .waste-meter {
+      position: relative;
+      min-height: 280px;
+      padding: 28px;
+      overflow: hidden;
+    }
+
+    .big-ratio {
+      font-family: var(--font-serif);
+      font-size: clamp(4rem, 10vw, 9rem);
+      line-height: 0.9;
+      color: var(--red);
+    }
+
+    .meter-track {
+      position: relative;
+      height: 42px;
+      margin-top: 28px;
+      background: color-mix(in oklab, var(--red) 12%, var(--panel-2));
+      border: 1.5px solid var(--border);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .meter-returned {
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: max(2px, 0.0083%);
+      background: var(--green);
+    }
+
+    .meter-pin {
+      position: absolute;
+      top: -20px;
+      right: 8px;
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      color: var(--muted);
+    }
+
+    .legend-stack {
+      display: grid;
+      gap: 12px;
+    }
+
+    .legend-item {
+      display: grid;
+      grid-template-columns: 18px 1fr auto;
+      gap: 10px;
+      align-items: center;
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+    }
+
+    .swatch {
+      width: 18px;
+      height: 18px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 18px;
+    }
+
+    .code-panel {
+      background: var(--code);
+      color: var(--code-ink);
+      border-radius: var(--radius);
+      border: 1.5px solid color-mix(in oklab, var(--code) 75%, white);
+      overflow: hidden;
+    }
+
+    .code-title {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 14px;
+      border-bottom: 1px solid color-mix(in oklab, var(--code-ink) 14%, transparent);
+      color: color-mix(in oklab, var(--code-ink) 70%, transparent);
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .code-lines {
+      margin: 0;
+      padding: 12px 0;
+      list-style: none;
+      font-family: var(--font-mono);
+      font-size: 0.82rem;
+      line-height: 1.45;
+      overflow: auto;
+    }
+
+    .code-line {
+      display: grid;
+      grid-template-columns: 44px minmax(0, 1fr) 94px;
+      gap: 10px;
+      min-height: 32px;
+      align-items: center;
+      padding: 3px 14px;
+      border-left: 4px solid transparent;
+      transition: background 180ms ease, border-color 180ms ease;
+    }
+
+    .code-line[data-fragment] { cursor: pointer; }
+    .code-line[data-fragment]:hover,
+    .code-line.active {
+      background: color-mix(in oklab, var(--code-ink) 9%, transparent);
+      border-left-color: var(--orange);
+    }
+
+    .ln {
+      color: color-mix(in oklab, var(--code-ink) 38%, transparent);
+      text-align: right;
+      user-select: none;
+    }
+
+    .heat {
+      height: 12px;
+      border-radius: 999px;
+      background: color-mix(in oklab, var(--code-ink) 12%, transparent);
+      overflow: hidden;
+    }
+
+    .heat span {
+      display: block;
+      width: var(--heat, 10%);
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--green), var(--orange), var(--red));
+    }
+
+    .keyword { color: oklch(0.78 0.13 238); }
+    .method { color: oklch(0.82 0.15 145); }
+    .string { color: oklch(0.83 0.15 75); }
+    .problem { color: oklch(0.76 0.18 30); font-weight: 800; }
+
+    .insight-card {
+      margin-top: 18px;
+      padding: 18px;
+      border-left: 6px solid var(--blue);
+      background: var(--panel);
+      border-radius: var(--radius);
+      border-top: 1.5px solid var(--border);
+      border-right: 1.5px solid var(--border);
+      border-bottom: 1.5px solid var(--border);
+    }
+
+    .insight-card .title {
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      color: var(--blue);
+    }
+
+    .insight-card p {
+      margin-top: 8px;
+      color: var(--ink);
+    }
+
+    .river-card,
+    .bubble-card,
+    .plan-card {
+      padding: 14px;
+      background: var(--panel);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      overflow: auto;
+    }
+
+    svg {
+      display: block;
+      width: 100%;
+      min-width: 980px;
+      height: auto;
+      font-family: var(--font-sans);
+    }
+
+    .svg-label {
+      fill: var(--ink);
+      font-size: 15px;
+      font-weight: 800;
+    }
+
+    .svg-small {
+      fill: var(--muted);
+      font-size: 12px;
+      font-family: var(--font-mono);
+    }
+
+    .flow {
+      fill: none;
+      stroke-linecap: round;
+      opacity: 0.88;
+      transition: opacity 180ms ease, stroke-width 180ms ease;
+    }
+
+    .flow.active,
+    .bubble.active,
+    .plan-node.active {
+      opacity: 1;
+      filter: drop-shadow(0 0 10px color-mix(in oklab, var(--orange) 55%, transparent));
+    }
+
+    .flow.dim,
+    .bubble.dim,
+    .plan-node.dim {
+      opacity: 0.22;
+    }
+
+    .node-box {
+      fill: var(--panel);
+      stroke: var(--border);
+      stroke-width: 2;
+      rx: 8;
+    }
+
+    .node-box.hot { fill: color-mix(in oklab, var(--red) 11%, var(--panel)); stroke: var(--red); }
+    .node-box.warn { fill: color-mix(in oklab, var(--orange) 12%, var(--panel)); stroke: var(--orange); }
+    .node-box.ok { fill: color-mix(in oklab, var(--green) 10%, var(--panel)); stroke: var(--green); }
+    .node-box.blue { fill: color-mix(in oklab, var(--blue) 10%, var(--panel)); stroke: var(--blue); }
+
+    .bubble {
+      opacity: 0.9;
+      transition: opacity 180ms ease, transform 180ms ease;
+      transform-box: fill-box;
+      transform-origin: center;
+      cursor: pointer;
+    }
+
+    .bubble:hover { transform: scale(1.04); }
+
+    .bubble-label {
+      fill: white;
+      font-size: 18px;
+      font-family: var(--font-serif);
+      font-weight: 800;
+      pointer-events: none;
+      text-anchor: middle;
+    }
+
+    .bubble-small {
+      fill: white;
+      font-size: 11px;
+      font-family: var(--font-mono);
+      pointer-events: none;
+      text-anchor: middle;
+    }
+
+    .operator-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    .operator-card {
+      padding: 16px;
+      box-shadow: none;
+      cursor: pointer;
+      border-left: 6px solid var(--border);
+    }
+
+    .operator-card[data-fragment="wildcard"] { border-left-color: var(--red); }
+    .operator-card[data-fragment="sort"] { border-left-color: var(--orange); }
+    .operator-card[data-fragment="projection"] { border-left-color: var(--violet); }
+    .operator-card[data-fragment="paging"] { border-left-color: var(--green); }
+    .operator-card.active {
+      outline: 3px solid color-mix(in oklab, var(--orange) 45%, transparent);
+    }
+
+    .operator-card .metric {
+      font-family: var(--font-serif);
+      font-size: 2rem;
+      line-height: 1;
+    }
+
+    .operator-card .caption {
+      margin-top: 8px;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      text-transform: uppercase;
+    }
+
+    .timeline {
+      display: grid;
+      gap: 12px;
+      counter-reset: step;
+    }
+
+    .step-card {
+      display: grid;
+      grid-template-columns: 44px minmax(0, 1fr) 160px;
+      gap: 16px;
+      align-items: start;
+      padding: 16px;
+      box-shadow: none;
+      cursor: pointer;
+    }
+
+    .step-card::before {
+      counter-increment: step;
+      content: counter(step);
+      display: grid;
+      place-items: center;
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: var(--ink);
+      color: white;
+      font-family: var(--font-mono);
+      font-weight: 800;
+    }
+
+    .step-card.active {
+      border-color: var(--blue);
+      outline: 3px solid color-mix(in oklab, var(--blue) 18%, transparent);
+    }
+
+    .step-card .tag {
+      justify-self: end;
+      padding: 4px 8px;
+      border-radius: 999px;
+      color: white;
+      background: var(--blue);
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .callout {
+      padding: 18px;
+      box-shadow: none;
+    }
+
+    .callout strong { color: var(--ink); }
+
+    .mode-toggle {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .mode-toggle button {
+      min-height: 36px;
+      padding: 6px 10px;
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .mode-toggle button.active {
+      background: var(--blue);
+      color: white;
+      border-color: var(--blue);
+    }
+
+    @media (max-width: 980px) {
+      main { width: min(100vw - 24px, 1320px); padding-top: 24px; }
+      .hero,
+      .impact-layout,
+      .split {
+        grid-template-columns: 1fr;
+      }
+      .tabs {
+        position: static;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .stats,
+      .operator-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+      .step-card {
+        grid-template-columns: 44px minmax(0, 1fr);
+      }
+      .step-card .tag {
+        grid-column: 2;
+        justify-self: start;
+      }
+      .chip { white-space: normal; }
+    }
+
+    @media (max-width: 620px) {
+      .stats,
+      .operator-grid {
+        grid-template-columns: 1fr;
+      }
+      .code-line {
+        grid-template-columns: 36px minmax(0, 1fr);
+      }
+      .heat { display: none; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <section class="hero" aria-labelledby="page-title">
+    <div class="hero-card">
+      <div class="eyebrow">EF Core Bench Lab / visual experiments</div>
+      <h1 id="page-title">Wildcard search under load</h1>
+      <p class="lead">
+        Six ways to explain one captured execution plan: impact, source code, generated SQL, row flow,
+        operator pressure, and the AI investigation path back to the LINQ method.
+      </p>
+      <div class="chip-row">
+        <span class="chip"><strong>endpoint</strong> /scenarios/bad/wildcard-search</span>
+        <span class="chip"><strong>tag</strong> DeepBadOrderSearch</span>
+        <span class="chip"><strong>source</strong> OrderSearchRepository.cs:44</span>
+        <span class="chip"><strong>header</strong> X-EF-Include-Execution-Plan: true</span>
+      </div>
+    </div>
+
+    <aside class="control-card" aria-label="Guided investigation">
+      <div class="control-title">
+        <span>Guided step</span>
+        <span id="step-count">1 / 7</span>
+      </div>
+      <p class="step-copy" id="step-copy">
+        The request includes the diagnostic header, so the middleware allows EF command plan capture for this request only.
+      </p>
+      <div class="step-actions">
+        <button class="icon-btn" id="prev-step" type="button" aria-label="Previous step">&lt;</button>
+        <div class="progress" aria-label="Investigation progress"><span id="progress-fill"></span></div>
+        <button class="icon-btn" id="next-step" type="button" aria-label="Next step">&gt;</button>
+      </div>
+    </aside>
+  </section>
+
+  <nav class="tabs" aria-label="Visualization tabs">
+    <button class="tab-button" type="button" data-tab="impact" aria-selected="true">Impact</button>
+    <button class="tab-button" type="button" data-tab="code">C# to SQL</button>
+    <button class="tab-button" type="button" data-tab="river">Row River</button>
+    <button class="tab-button" type="button" data-tab="hotlines">Hot Lines</button>
+    <button class="tab-button" type="button" data-tab="bubbles">Bubbles</button>
+    <button class="tab-button" type="button" data-tab="walkthrough">Walkthrough</button>
+  </nav>
+
+  <section class="tab-shell">
+    <article class="tab-panel active" id="tab-impact">
+      <div class="section-head">
+        <div>
+          <div class="eyebrow">01 / clear visual impact</div>
+          <h2>60,000 rows read, 5 returned</h2>
+        </div>
+        <p>
+          The headline is not that the query returns five rows. The headline is the work done before those five rows can be returned.
+        </p>
+      </div>
+
+      <div class="impact-layout">
+        <div class="waste-meter panel">
+          <div class="big-ratio">12,000x</div>
+          <p>More order rows read than rows returned.</p>
+          <div class="meter-track" aria-label="Rows read compared with rows returned">
+            <span class="meter-returned"></span>
+            <span class="meter-pin">5 returned</span>
+          </div>
+          <p style="margin-top: 18px;">
+            The green returned segment is mathematically present but visually tiny: 5 / 60,000 is 0.0083%.
+          </p>
+        </div>
+
+        <div class="panel callout">
+          <h3>What the audience should see first</h3>
+          <div class="legend-stack">
+            <div class="legend-item"><span class="swatch" style="background: var(--red);"></span><span>Rows read</span><strong>60,000</strong></div>
+            <div class="legend-item"><span class="swatch" style="background: var(--orange);"></span><span>Rows after status filter</span><strong>47,984</strong></div>
+            <div class="legend-item"><span class="swatch" style="background: var(--violet);"></span><span>Rows sorted / product seeks</span><strong>903</strong></div>
+            <div class="legend-item"><span class="swatch" style="background: var(--green);"></span><span>Rows returned</span><strong>5</strong></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="stats">
+        <div class="stat">
+          <div class="value danger">60k</div>
+          <div class="label">SalesOrders rows read</div>
+        </div>
+        <div class="stat">
+          <div class="value warn">47,984</div>
+          <div class="label">Non-cancelled rows kept</div>
+        </div>
+        <div class="stat">
+          <div class="value blue">903</div>
+          <div class="label">Rows entering sort</div>
+        </div>
+        <div class="stat">
+          <div class="value ok">5</div>
+          <div class="label">Rows returned</div>
+        </div>
+      </div>
+    </article>
+
+    <article class="tab-panel" id="tab-code">
+      <div class="section-head">
+        <div>
+          <div class="eyebrow">02 / source to generated SQL</div>
+          <h2>Each LINQ clause leaves a plan fingerprint</h2>
+        </div>
+        <p>
+          Click a C# line or SQL fragment. The shared fragment ID lights up the matching explanation.
+        </p>
+      </div>
+
+      <div class="split">
+        <div class="code-panel">
+          <div class="code-title"><span>C# LINQ</span><span>OrderSearchRepository.cs</span></div>
+          <ol class="code-lines">
+            <li class="code-line" data-fragment="trace" style="--heat: 8%"><span class="ln">43</span><code><span class="keyword">return await</span> dbContext.Orders</code><span class="heat"><span></span></span></li>
+            <li class="code-line" data-fragment="trace" style="--heat: 0%"><span class="ln">44</span><code>  .<span class="method">TagWithContext</span>(<span class="string">"DeepBadOrderSearch..."</span>)</code><span class="heat"><span></span></span></li>
+            <li class="code-line" data-fragment="status" style="--heat: 48%"><span class="ln">46</span><code>  .<span class="method">Where</span>(order =&gt; order.Status != <span class="string">"Cancelled"</span>)</code><span class="heat"><span></span></span></li>
+            <li class="code-line" data-fragment="wildcard" style="--heat: 96%"><span class="ln">48</span><code>  .<span class="method">Where</span>(order =&gt; (Customer + Region + Product + SalesPerson)</code><span class="heat"><span></span></span></li>
+            <li class="code-line" data-fragment="wildcard" style="--heat: 100%"><span class="ln">49</span><code>    .<span class="problem">ToLower</span>()</code><span class="heat"><span></span></span></li>
+            <li class="code-line" data-fragment="wildcard" style="--heat: 100%"><span class="ln">50</span><code>    .<span class="problem">Contains</span>(loweredSearch))</code><span class="heat"><span></span></span></li>
+            <li class="code-line" data-fragment="sort" style="--heat: 72%"><span class="ln">51</span><code>  .<span class="method">OrderBy</span>(order =&gt; order.Customer.Region)</code><span class="heat"><span></span></span></li>
+            <li class="code-line" data-fragment="sort" style="--heat: 62%"><span class="ln">52</span><code>  .<span class="method">ThenBy</span>(order =&gt; order.OrderedAt)</code><span class="heat"><span></span></span></li>
+            <li class="code-line" data-fragment="paging" style="--heat: 34%"><span class="ln">53</span><code>  .<span class="method">Skip</span>(page * pageSize)</code><span class="heat"><span></span></span></li>
+            <li class="code-line" data-fragment="paging" style="--heat: 28%"><span class="ln">54</span><code>  .<span class="method">Take</span>(pageSize)</code><span class="heat"><span></span></span></li>
+            <li class="code-line" data-fragment="projection" style="--heat: 58%"><span class="ln">55</span><code>  .<span class="method">Select</span>(order =&gt; new OrderSearchResult(... Product ...))</code><span class="heat"><span></span></span></li>
+            <li class="code-line" data-fragment="execute" style="--heat: 20%"><span class="ln">66</span><code>  .<span class="method">ToListAsync</span>(cancellationToken);</code><span class="heat"><span></span></span></li>
+          </ol>
+        </div>
+
+        <div class="code-panel">
+          <div class="code-title"><span>Generated SQL shape</span><span>Plan consequence</span></div>
+          <ol class="code-lines">
+            <li class="code-line" data-fragment="trace" style="--heat: 0%"><span class="ln">--</span><code>efbench.context: DeepBadOrderSearch</code><span class="heat"><span></span></span></li>
+            <li class="code-line" data-fragment="trace" style="--heat: 0%"><span class="ln">--</span><code>efbench.source: OrderSearchRepository.cs:44</code><span class="heat"><span></span></span></li>
+            <li class="code-line" data-fragment="status" style="--heat: 48%"><span class="ln">1</span><code><span class="keyword">WHERE</span> [s].[Status] &lt;&gt; N<span class="string">'Cancelled'</span></code><span class="heat"><span></span></span></li>
+            <li class="code-line" data-fragment="wildcard" style="--heat: 100%"><span class="ln">2</span><code><span class="keyword">AND</span> LOWER([c].[Name] + N<span class="string">' '</span> + [c].[Region] + ...)</code><span class="heat"><span></span></span></li>
+            <li class="code-line" data-fragment="wildcard" style="--heat: 100%"><span class="ln">3</span><code>    <span class="problem">LIKE N'%road%'</span></code><span class="heat"><span></span></span></li>
+            <li class="code-line" data-fragment="sort" style="--heat: 72%"><span class="ln">4</span><code><span class="keyword">ORDER BY</span> [c].[Region], [s].[OrderedAt]</code><span class="heat"><span></span></span></li>
+            <li class="code-line" data-fragment="paging" style="--heat: 34%"><span class="ln">5</span><code><span class="keyword">OFFSET</span> @__p_0 <span class="keyword">ROWS FETCH NEXT</span> @__p_1 <span class="keyword">ROWS ONLY</span></code><span class="heat"><span></span></span></li>
+            <li class="code-line" data-fragment="projection" style="--heat: 58%"><span class="ln">6</span><code><span class="keyword">SELECT</span> [s].*, [c].[Name], [p].[Name], [p].[Category]</code><span class="heat"><span></span></span></li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="insight-card" id="fragment-insight">
+        <div class="title">Selected fragment</div>
+        <p>Select a highlighted line to see how source code, SQL, and the execution plan connect.</p>
+      </div>
+    </article>
+
+    <article class="tab-panel" id="tab-river">
+      <div class="section-head">
+        <div>
+          <div class="eyebrow">03 / data as a river</div>
+          <h2>Rows narrow only after broad work</h2>
+        </div>
+        <p>
+          Width uses a compressed scale so the final five rows remain visible. Labels preserve the actual counts.
+        </p>
+      </div>
+
+      <div class="river-card">
+        <svg viewBox="0 0 1180 520" role="img" aria-labelledby="river-title river-desc">
+          <title id="river-title">Row river for DeepBadOrderSearch</title>
+          <desc id="river-desc">A row-flow diagram from 60,000 orders read to five rows returned, with a side loop for repeated product seeks.</desc>
+          <defs>
+            <linearGradient id="river-hot" x1="0" x2="1">
+              <stop offset="0%" stop-color="oklch(0.54 0.21 30)" />
+              <stop offset="52%" stop-color="oklch(0.67 0.16 67)" />
+              <stop offset="100%" stop-color="oklch(0.47 0.16 292)" />
+            </linearGradient>
+            <linearGradient id="river-cool" x1="0" x2="1">
+              <stop offset="0%" stop-color="oklch(0.52 0.14 175)" />
+              <stop offset="100%" stop-color="oklch(0.51 0.16 145)" />
+            </linearGradient>
+          </defs>
+
+          <rect class="node-box hot" x="30" y="170" width="170" height="86"></rect>
+          <text class="svg-label" x="52" y="204">SalesOrders</text>
+          <text class="svg-small" x="52" y="230">60,000 rows read</text>
+
+          <rect class="node-box warn" x="265" y="174" width="170" height="78"></rect>
+          <text class="svg-label" x="287" y="206">Status filter</text>
+          <text class="svg-small" x="287" y="230">47,984 active</text>
+
+          <rect class="node-box warn" x="500" y="174" width="170" height="78"></rect>
+          <text class="svg-label" x="522" y="206">Join customers</text>
+          <text class="svg-small" x="522" y="230">1,200 scanned</text>
+
+          <rect class="node-box hot" x="735" y="156" width="190" height="114"></rect>
+          <text class="svg-label" x="757" y="196">Wildcard predicate</text>
+          <text class="svg-small" x="757" y="222">LOWER(...) LIKE '%road%'</text>
+          <text class="svg-small" x="757" y="246">903 matches</text>
+
+          <rect class="node-box warn" x="735" y="336" width="190" height="78"></rect>
+          <text class="svg-label" x="757" y="368">Product lookup loop</text>
+          <text class="svg-small" x="757" y="392">903 seeks / 1,806 reads</text>
+
+          <rect class="node-box warn" x="980" y="174" width="120" height="78"></rect>
+          <text class="svg-label" x="1004" y="206">Sort</text>
+          <text class="svg-small" x="1004" y="230">903 rows</text>
+
+          <rect class="node-box ok" x="1040" y="52" width="110" height="66"></rect>
+          <text class="svg-label" x="1067" y="82">Top</text>
+          <text class="svg-small" x="1067" y="104">5 rows</text>
+
+          <path class="flow" data-fragment="status" d="M200 213 C230 213 235 213 265 213" stroke="var(--red)" stroke-width="76"></path>
+          <path class="flow" data-fragment="status" d="M435 213 C465 213 470 213 500 213" stroke="var(--orange)" stroke-width="64"></path>
+          <path class="flow" data-fragment="wildcard" d="M670 213 C700 213 705 213 735 213" stroke="var(--red)" stroke-width="64"></path>
+          <path class="flow" data-fragment="wildcard" d="M830 270 C830 296 830 310 830 336" stroke="var(--violet)" stroke-width="28"></path>
+          <path class="flow" data-fragment="projection" d="M925 375 C985 375 980 265 980 232" stroke="var(--violet)" stroke-width="28"></path>
+          <path class="flow" data-fragment="sort" d="M925 213 C950 213 955 213 980 213" stroke="var(--orange)" stroke-width="28"></path>
+          <path class="flow" data-fragment="paging" d="M1040 174 C1040 145 1075 134 1095 118" stroke="var(--green)" stroke-width="8"></path>
+
+          <text class="svg-small" x="34" y="318">Large red/orange stream: high rows read before useful narrowing.</text>
+          <text class="svg-small" x="735" y="462">Side loop: 903 product seeks</text>
+          <text class="svg-small" x="735" y="484">after the wildcard match.</text>
+          <text class="svg-small" x="930" y="318">Final output is tiny</text>
+          <text class="svg-small" x="930" y="340">compared with upstream work.</text>
+        </svg>
+      </div>
+    </article>
+
+    <article class="tab-panel" id="tab-hotlines">
+      <div class="section-head">
+        <div>
+          <div class="eyebrow">04 / benchmark-style hot lines</div>
+          <h2>Heat marks work attribution, not exact elapsed time</h2>
+        </div>
+        <p>
+          This view borrows the flame-graph idea of making hot areas obvious, but labels it as explanation weight because the plan data here is row/read/operator evidence.
+        </p>
+      </div>
+
+      <div class="split">
+        <div class="panel callout">
+          <h3>C# heat explanation</h3>
+          <div class="legend-stack">
+            <div class="legend-item" data-fragment="wildcard"><span class="swatch" style="background: var(--red);"></span><span>Lines 47-50: computed wildcard search</span><strong>100%</strong></div>
+            <div class="legend-item" data-fragment="sort"><span class="swatch" style="background: var(--orange);"></span><span>Lines 51-52: sort before page</span><strong>72%</strong></div>
+            <div class="legend-item" data-fragment="projection"><span class="swatch" style="background: var(--violet);"></span><span>Lines 55-65: related projection lookups</span><strong>58%</strong></div>
+            <div class="legend-item" data-fragment="trace"><span class="swatch" style="background: var(--green);"></span><span>Line 44: source trace anchor</span><strong>0%</strong></div>
+          </div>
+        </div>
+
+        <div class="panel callout">
+          <h3>SQL heat explanation</h3>
+          <div class="legend-stack">
+            <div class="legend-item" data-fragment="wildcard"><span class="swatch" style="background: var(--red);"></span><span>Clustered scan + LOWER LIKE</span><strong>60k rows</strong></div>
+            <div class="legend-item" data-fragment="sort"><span class="swatch" style="background: var(--orange);"></span><span>ORDER BY before OFFSET/FETCH</span><strong>903 rows</strong></div>
+            <div class="legend-item" data-fragment="projection"><span class="swatch" style="background: var(--violet);"></span><span>Repeated product seeks</span><strong>903x</strong></div>
+            <div class="legend-item" data-fragment="paging"><span class="swatch" style="background: var(--green);"></span><span>Final returned page</span><strong>5 rows</strong></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="operator-grid">
+        <div class="operator-card" data-fragment="wildcard">
+          <div class="metric danger">60,000</div>
+          <h3>Clustered scan</h3>
+          <p>Broad order read caused by non-sargable text search.</p>
+          <div class="caption">Highest impact</div>
+        </div>
+        <div class="operator-card" data-fragment="sort">
+          <div class="metric warn">903</div>
+          <h3>Sort before paging</h3>
+          <p>Rows are sorted before OFFSET/FETCH returns the requested page.</p>
+          <div class="caption">Visible bottleneck</div>
+        </div>
+        <div class="operator-card" data-fragment="projection">
+          <div class="metric blue">903x</div>
+          <h3>Product lookups</h3>
+          <p>Projected product fields add repeated seek work.</p>
+          <div class="caption">Fan-out signal</div>
+        </div>
+        <div class="operator-card" data-fragment="paging">
+          <div class="metric ok">5</div>
+          <h3>Final page</h3>
+          <p>Small output does not imply small upstream work.</p>
+          <div class="caption">Output</div>
+        </div>
+      </div>
+    </article>
+
+    <article class="tab-panel" id="tab-bubbles">
+      <div class="section-head">
+        <div>
+          <div class="eyebrow">05 / impact bubbles</div>
+          <h2>Different signals need different sizes</h2>
+        </div>
+        <div class="mode-toggle" aria-label="Bubble metric mode">
+          <button type="button" data-mode="rows" class="active">Rows</button>
+          <button type="button" data-mode="reads">Reads</button>
+          <button type="button" data-mode="execs">Executions</button>
+        </div>
+      </div>
+
+      <div class="bubble-card">
+        <svg viewBox="0 0 1180 560" role="img" aria-labelledby="bubble-title bubble-desc">
+          <title id="bubble-title">Bubble view of query impact</title>
+          <desc id="bubble-desc">Bubbles compare row counts, logical reads, and execution counts for plan signals.</desc>
+
+          <g id="bubble-rows">
+            <circle class="bubble" data-fragment="wildcard" cx="210" cy="240" r="118" fill="var(--red)"></circle>
+            <text class="bubble-label" x="210" y="234">60k</text>
+            <text class="bubble-small" x="210" y="260">orders read</text>
+
+            <circle class="bubble" data-fragment="status" cx="475" cy="250" r="102" fill="var(--orange)"></circle>
+            <text class="bubble-label" x="475" y="244">47,984</text>
+            <text class="bubble-small" x="475" y="270">active rows</text>
+
+            <circle class="bubble" data-fragment="sort" cx="715" cy="268" r="58" fill="var(--violet)"></circle>
+            <text class="bubble-label" x="715" y="262">903</text>
+            <text class="bubble-small" x="715" y="288">sorted</text>
+
+            <circle class="bubble" data-fragment="paging" cx="905" cy="286" r="22" fill="var(--green)"></circle>
+            <text class="bubble-label" x="905" y="291">5</text>
+            <text class="bubble-small" x="905" y="324" fill="var(--ink)">returned</text>
+          </g>
+
+          <g id="bubble-reads" hidden>
+            <circle class="bubble" data-fragment="wildcard" cx="245" cy="255" r="92" fill="var(--red)"></circle>
+            <text class="bubble-label" x="245" y="249">774</text>
+            <text class="bubble-small" x="245" y="275">order reads</text>
+
+            <circle class="bubble" data-fragment="status" cx="475" cy="264" r="52" fill="var(--orange)"></circle>
+            <text class="bubble-label" x="475" y="258">1,200</text>
+            <text class="bubble-small" x="475" y="284">customers</text>
+
+            <circle class="bubble" data-fragment="projection" cx="725" cy="248" r="122" fill="var(--violet)"></circle>
+            <text class="bubble-label" x="725" y="242">1,806</text>
+            <text class="bubble-small" x="725" y="268">product reads</text>
+
+            <circle class="bubble" data-fragment="paging" cx="965" cy="294" r="18" fill="var(--green)"></circle>
+            <text class="bubble-label" x="965" y="299">5</text>
+            <text class="bubble-small" x="965" y="330" fill="var(--ink)">returned</text>
+          </g>
+
+          <g id="bubble-execs" hidden>
+            <circle class="bubble" data-fragment="trace" cx="210" cy="270" r="44" fill="var(--blue)"></circle>
+            <text class="bubble-label" x="210" y="264">1</text>
+            <text class="bubble-small" x="210" y="290">request</text>
+
+            <circle class="bubble" data-fragment="wildcard" cx="440" cy="260" r="58" fill="var(--red)"></circle>
+            <text class="bubble-label" x="440" y="254">1</text>
+            <text class="bubble-small" x="440" y="280">scan path</text>
+
+            <circle class="bubble" data-fragment="projection" cx="700" cy="238" r="128" fill="var(--violet)"></circle>
+            <text class="bubble-label" x="700" y="232">903x</text>
+            <text class="bubble-small" x="700" y="258">product seeks</text>
+
+            <circle class="bubble" data-fragment="paging" cx="975" cy="292" r="28" fill="var(--green)"></circle>
+            <text class="bubble-label" x="975" y="297">1</text>
+            <text class="bubble-small" x="975" y="330" fill="var(--ink)">final top</text>
+          </g>
+
+          <text class="svg-small" x="46" y="510">Use this tab when the audience needs a fast sense of magnitude before reading the plan.</text>
+        </svg>
+      </div>
+    </article>
+
+    <article class="tab-panel" id="tab-walkthrough">
+      <div class="section-head">
+        <div>
+          <div class="eyebrow">06 / AI investigation path</div>
+          <h2>From HTTP header to source file</h2>
+        </div>
+        <p>
+          This is the demo story: remote activation, actual plan capture, Aspire logs, plan interpretation, source narrowing.
+        </p>
+      </div>
+
+      <div class="timeline">
+        <div class="step-card active" data-step="0" data-fragment="trace">
+          <div>
+            <h3>Diagnostic header is present</h3>
+            <p>The request opts into plan capture with <strong>X-EF-Include-Execution-Plan: true</strong>.</p>
+          </div>
+          <span class="tag">request</span>
+        </div>
+        <div class="step-card" data-step="1" data-fragment="trace">
+          <div>
+            <h3>Middleware scopes the request</h3>
+            <p>The request context allows the EF interceptor to capture plans only for this request.</p>
+          </div>
+          <span class="tag">middleware</span>
+        </div>
+        <div class="step-card" data-step="2" data-fragment="trace">
+          <div>
+            <h3>TagWithContext marks the query</h3>
+            <p>The SQL carries <strong>DeepBadOrderSearch</strong> and the file/member/line source tag.</p>
+          </div>
+          <span class="tag">source</span>
+        </div>
+        <div class="step-card" data-step="3" data-fragment="wildcard">
+          <div>
+            <h3>Plan shows broad read</h3>
+            <p>The order table scan reads 60,000 rows before useful narrowing occurs.</p>
+          </div>
+          <span class="tag">plan</span>
+        </div>
+        <div class="step-card" data-step="4" data-fragment="wildcard">
+          <div>
+            <h3>Predicate explains the scan</h3>
+            <p>The generated <strong>LOWER(...) LIKE '%road%'</strong> predicate is not index-friendly.</p>
+          </div>
+          <span class="tag">sql</span>
+        </div>
+        <div class="step-card" data-step="5" data-fragment="sort">
+          <div>
+            <h3>Sort happens before final page</h3>
+            <p>SQL Server sorts 903 candidates before returning the requested five rows.</p>
+          </div>
+          <span class="tag">sort</span>
+        </div>
+        <div class="step-card" data-step="6" data-fragment="trace">
+          <div>
+            <h3>AI can point to one method</h3>
+            <p>The plan evidence and source tag narrow the investigation to <strong>SearchWithKnownPerformanceProblemAsync</strong>.</p>
+          </div>
+          <span class="tag">fix</span>
+        </div>
+      </div>
+    </article>
+  </section>
+</main>
+
+<script>
+  const fragmentDetails = {
+    trace: {
+      title: "Trace anchor",
+      text: "TagWithContext adds the context and source line. It has no performance cost signal, but it turns a raw execution plan into a source-level investigation.",
+      tab: "walkthrough"
+    },
+    status: {
+      title: "Broad status filter",
+      text: "Status != Cancelled leaves 47,984 of 60,000 rows. The filter helps, but it does not narrow enough before the text search.",
+      tab: "river"
+    },
+    wildcard: {
+      title: "Computed wildcard predicate",
+      text: "Concatenation plus ToLower().Contains(...) becomes LOWER(...) LIKE '%road%'. SQL Server cannot use a normal seek path, so the plan reads broadly.",
+      tab: "code"
+    },
+    sort: {
+      title: "Sort before paging",
+      text: "OrderBy/ThenBy forces a sort of 903 matching rows before OFFSET/FETCH can return five rows.",
+      tab: "hotlines"
+    },
+    paging: {
+      title: "Small final output",
+      text: "Skip/Take returns only five rows, but it is downstream of the scan, predicate, join, sort, and lookup work.",
+      tab: "impact"
+    },
+    projection: {
+      title: "Projection lookup pressure",
+      text: "The projection needs product fields, and the captured plan shows 903 product seeks and 1,806 product reads.",
+      tab: "bubbles"
+    },
+    execute: {
+      title: "Execution boundary",
+      text: "ToListAsync is where the LINQ expression is sent to SQL Server and the actual plan can be captured.",
+      tab: "walkthrough"
+    }
+  };
+
+  const steps = [
+    { fragment: "trace", text: "The request includes the diagnostic header, so the middleware allows EF command plan capture for this request only." },
+    { fragment: "trace", text: "The EF query is tagged with DeepBadOrderSearch and the source location before SQL Server sees it." },
+    { fragment: "wildcard", text: "SQL Server reads the broad order set because the computed wildcard predicate blocks a normal seek path." },
+    { fragment: "status", text: "The status filter narrows 60,000 rows to 47,984 active rows, which is still a large stream." },
+    { fragment: "wildcard", text: "The text search finally narrows the stream to 903 matches, after the broad read and join work has already happened." },
+    { fragment: "sort", text: "The 903 matches are sorted by region and order date before OFFSET/FETCH can return the requested page." },
+    { fragment: "trace", text: "The source tag lets the AI report one file and method instead of asking a developer to search the whole codebase." }
+  ];
+
+  let activeFragment = "trace";
+  let activeStep = 0;
+
+  const tabButtons = document.querySelectorAll(".tab-button");
+  const tabPanels = document.querySelectorAll(".tab-panel");
+  const insight = document.querySelector("#fragment-insight");
+  const stepCopy = document.querySelector("#step-copy");
+  const stepCount = document.querySelector("#step-count");
+  const progressFill = document.querySelector("#progress-fill");
+
+  function setTab(tab) {
+    tabButtons.forEach((button) => {
+      const selected = button.dataset.tab === tab;
+      button.setAttribute("aria-selected", selected ? "true" : "false");
+    });
+
+    tabPanels.forEach((panel) => {
+      panel.classList.toggle("active", panel.id === `tab-${tab}`);
+    });
+  }
+
+  function setFragment(fragment) {
+    if (!fragmentDetails[fragment]) return;
+    activeFragment = fragment;
+    document.querySelectorAll("[data-fragment]").forEach((element) => {
+      const isActive = element.dataset.fragment === fragment;
+      element.classList.toggle("active", isActive);
+      element.classList.toggle("dim", !isActive && element.matches(".flow, .bubble, .plan-node"));
+    });
+
+    const detail = fragmentDetails[fragment];
+    if (insight) {
+      insight.innerHTML = `<div class="title">${detail.title}</div><p>${detail.text}</p>`;
+    }
+  }
+
+  function setStep(index) {
+    activeStep = (index + steps.length) % steps.length;
+    const step = steps[activeStep];
+    stepCopy.textContent = step.text;
+    stepCount.textContent = `${activeStep + 1} / ${steps.length}`;
+    progressFill.style.setProperty("--progress", `${((activeStep + 1) / steps.length) * 100}%`);
+    document.querySelectorAll("[data-step]").forEach((card) => {
+      card.classList.toggle("active", Number(card.dataset.step) === activeStep);
+    });
+    setFragment(step.fragment);
+  }
+
+  tabButtons.forEach((button) => {
+    button.addEventListener("click", () => setTab(button.dataset.tab));
+  });
+
+  document.querySelectorAll("[data-fragment]").forEach((element) => {
+    element.addEventListener("click", () => setFragment(element.dataset.fragment));
+  });
+
+  document.querySelectorAll("[data-step]").forEach((card) => {
+    card.addEventListener("click", () => setStep(Number(card.dataset.step)));
+  });
+
+  document.querySelector("#prev-step").addEventListener("click", () => setStep(activeStep - 1));
+  document.querySelector("#next-step").addEventListener("click", () => setStep(activeStep + 1));
+
+  document.querySelectorAll("[data-mode]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const mode = button.dataset.mode;
+      document.querySelectorAll("[data-mode]").forEach((candidate) => {
+        candidate.classList.toggle("active", candidate === button);
+      });
+      ["rows", "reads", "execs"].forEach((name) => {
+        document.querySelector(`#bubble-${name}`).hidden = name !== mode;
+      });
+      setFragment(activeFragment);
+    });
+  });
+
+  setStep(0);
+</script>
+</body>
+</html>
