@@ -65,7 +65,7 @@ aspire otel logs <api-resource-name> --limit 100 --format Json
 aspire otel spans <api-resource-name> --limit 100 --format Json
 ```
 
-Look for `request_id`, `include_execution_plan`, `tag_context`, `source`, and `execution_plan_xml`.
+Look for `request_id`, `include_execution_plan`, `tag_context`, `source`, and `execution_plan_xml_chunk`. Reassemble plan chunks by `request_id`, `command_id`, and `execution_plan_chunk_index`.
 
 ## Important EF Core Limitation
 

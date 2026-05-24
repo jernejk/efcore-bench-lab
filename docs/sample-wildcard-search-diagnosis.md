@@ -76,7 +76,7 @@ A useful investigation should find:
 - `include_execution_plan=true`
 - `tag_context=DeepBadOrderSearch: wildcard text search across joined order data`
 - `source=OrderSearchRepository:SearchWithKnownPerformanceProblemAsync:<line>`
-- `execution_plan_xml=<ShowPlanXML ...>`
+- `execution_plan_xml_chunk=<ShowPlanXML ...>`
 
 In the execution plan, look for:
 

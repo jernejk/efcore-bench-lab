@@ -1,5 +1,7 @@
 using System.Data.Common;
 using System.Diagnostics;
+using System.Security.Cryptography;
+using System.Text;
 using EfCoreBenchLab.Diagnostics.Options;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Logging;
@@ -156,7 +158,7 @@ public sealed class EfDiagnosticsInterceptor(
         if (options.Value.IncludeSqlInLogs)
         {
             logger.LogInformation(
-                "EF command executed request_id={RequestId} include_execution_plan={IncludeExecutionPlan} command_id={CommandId} duration_ms={DurationMs} tag_context={TagContext} source={SourceLocation} sql={Sql}",
+                "EF command executed request_id={request_id} include_execution_plan={include_execution_plan} command_id={command_id} duration_ms={duration_ms} tag_context={tag_context} source={source} sql={sql}",
                 requestContext?.RequestId,
                 requestContext?.IncludeExecutionPlan ?? false,
                 eventData.CommandId,
@@ -168,7 +170,7 @@ public sealed class EfDiagnosticsInterceptor(
         else
         {
             logger.LogInformation(
-                "EF command executed request_id={RequestId} include_execution_plan={IncludeExecutionPlan} command_id={CommandId} duration_ms={DurationMs} tag_context={TagContext} source={SourceLocation}",
+                "EF command executed request_id={request_id} include_execution_plan={include_execution_plan} command_id={command_id} duration_ms={duration_ms} tag_context={tag_context} source={source}",
                 requestContext?.RequestId,
                 requestContext?.IncludeExecutionPlan ?? false,
                 eventData.CommandId,
@@ -201,13 +203,32 @@ public sealed class EfDiagnosticsInterceptor(
 
             Activity.Current?.SetTag("efbench.execution_plan_captured", true);
 
+            var chunks = ChunkExecutionPlan(executionPlanXml, options.Value.ExecutionPlanLogChunkSize);
+            var executionPlanHash = ComputeSha256(executionPlanXml);
+
             logger.LogInformation(
-                "EF actual execution plan captured request_id={RequestId} command_id={CommandId} tag_context={TagContext} source={SourceLocation} execution_plan_xml={ExecutionPlanXml}",
+                "EF actual execution plan captured request_id={request_id} command_id={command_id} tag_context={tag_context} source={source} execution_plan_length={execution_plan_length} execution_plan_sha256={execution_plan_sha256} execution_plan_chunk_count={execution_plan_chunk_count}",
                 requestContext?.RequestId,
                 commandId,
                 tagContext,
                 sourceLocation,
-                executionPlanXml);
+                executionPlanXml.Length,
+                executionPlanHash,
+                chunks.Length);
+
+            for (var index = 0; index < chunks.Length; index++)
+            {
+                logger.LogInformation(
+                    "EF actual execution plan chunk request_id={request_id} command_id={command_id} tag_context={tag_context} source={source} execution_plan_sha256={execution_plan_sha256} execution_plan_chunk_index={execution_plan_chunk_index} execution_plan_chunk_count={execution_plan_chunk_count} execution_plan_xml_chunk={execution_plan_xml_chunk}",
+                    requestContext?.RequestId,
+                    commandId,
+                    tagContext,
+                    sourceLocation,
+                    executionPlanHash,
+                    index,
+                    chunks.Length,
+                    chunks[index]);
+            }
         }
         catch (Exception ex)
         {
@@ -246,6 +267,26 @@ public sealed class EfDiagnosticsInterceptor(
     {
         return reader.FieldCount == 1
             && reader.GetName(0).Contains("Showplan", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string[] ChunkExecutionPlan(string executionPlanXml, int chunkSize)
+    {
+        var safeChunkSize = Math.Max(1_000, chunkSize);
+        var chunks = new string[(int)Math.Ceiling(executionPlanXml.Length / (double)safeChunkSize)];
+
+        for (var index = 0; index < chunks.Length; index++)
+        {
+            var start = index * safeChunkSize;
+            var length = Math.Min(safeChunkSize, executionPlanXml.Length - start);
+            chunks[index] = executionPlanXml.Substring(start, length);
+        }
+
+        return chunks;
+    }
+
+    private static string ComputeSha256(string value)
+    {
+        return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value))).ToLowerInvariant();
     }
 
     private static string? TryGetTagValue(string sql, string prefix)

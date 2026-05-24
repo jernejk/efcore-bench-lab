@@ -6,6 +6,8 @@ namespace EfCoreBenchLab.Api.Features.Orders;
 
 public sealed class OrderSearchRepository(BenchLabDbContext dbContext)
 {
+    private const int BadSearchCandidateLimit = 5_000;
+
     public async Task<IReadOnlyList<OrderSearchResult>> GetRecentPaidOrdersAsync(
         int page,
         int pageSize,
@@ -44,6 +46,8 @@ public sealed class OrderSearchRepository(BenchLabDbContext dbContext)
             .TagWithContext("DeepBadOrderSearch: wildcard text search across joined order data")
             .AsNoTracking()
             .Where(order => order.Status != "Cancelled")
+            .OrderByDescending(order => order.OrderedAt)
+            .Take(BadSearchCandidateLimit)
             .Where(order =>
                 (order.Customer.Name + " " + order.Customer.Region + " " + order.Product.Name + " " + order.SalesPerson)
                 .ToLower()

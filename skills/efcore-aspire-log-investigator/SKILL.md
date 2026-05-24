@@ -33,7 +33,7 @@ Lab endpoints, only for this repository:
 - `/scenarios/normal/customer-orders?customerId=42&pageSize=25`
 - `/scenarios/normal/recent-paid-orders?page=0&pageSize=25`
 - `/scenarios/bad/wildcard-search?search=road&page=25&pageSize=25`
-- `/scenarios/bad/over-fetching?search=road&fetchCount=20000&page=0&pageSize=25`
+- `/scenarios/bad/over-fetching?search=road&fetchCount=5000&page=0&pageSize=25`
 - `/scenarios/bad/n-plus-one?region=Queensland&customerCount=8`
 
 ## Inspect logs and OpenTelemetry
@@ -51,7 +51,7 @@ aspire otel logs api --limit 100 --format Json
 aspire otel spans api --limit 100 --format Json
 ```
 
-Look for fields named `request_id`, `include_execution_plan`, `tag_context`, `source`, and `execution_plan_xml`. The Aspire logs and OpenTelemetry records are the diagnostic source of truth; there is no in-memory query-log endpoint.
+Look for fields named `request_id`, `include_execution_plan`, `tag_context`, `source`, and `execution_plan_xml_chunk`. The Aspire logs and OpenTelemetry records are the diagnostic source of truth; there is no in-memory query-log endpoint.
 
 ## Diagnosis patterns
 

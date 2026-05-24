@@ -94,7 +94,7 @@ public static class ScenarioEndpointExtensions
                 string.IsNullOrWhiteSpace(search) ? "road" : search,
                 Math.Max(0, page ?? 0),
                 Math.Clamp(pageSize ?? 25, 1, 100),
-                Math.Clamp(fetchCount ?? 20_000, 1_000, 60_000),
+                Math.Clamp(fetchCount ?? 5_000, 1_000, 5_000),
                 cancellationToken);
 
             return Results.Ok(result);
@@ -125,11 +125,11 @@ public static class ScenarioEndpointExtensions
             badScenarios = new[]
             {
                 "/scenarios/bad/wildcard-search?search=road&page=25&pageSize=25",
-                "/scenarios/bad/over-fetching?search=road&fetchCount=20000&page=0&pageSize=25",
+                "/scenarios/bad/over-fetching?search=road&fetchCount=5000&page=0&pageSize=25",
                 "/scenarios/bad/n-plus-one?region=Queensland&customerCount=8"
             },
             executionPlanHeader = "X-EF-Include-Execution-Plan: true",
-            diagnostics = "Use Aspire logs or OpenTelemetry records for request_id, tag_context, source, and execution_plan_xml."
+            diagnostics = "Use Aspire logs or OpenTelemetry records for request_id, tag_context, source, and execution_plan_xml_chunk."
         }));
 
         return endpoints;

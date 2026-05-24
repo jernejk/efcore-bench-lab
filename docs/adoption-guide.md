@@ -7,7 +7,7 @@ The intended production-like behavior is:
 1. Execution-plan capture is off by default.
 2. A diagnostic HTTP header opts in one request.
 3. EF Core commands in that request are tagged with query context and source class/member/line.
-4. Aspire logs/OpenTelemetry contain the request id, SQL tag, source class/member/line, and execution-plan XML.
+4. Aspire logs/OpenTelemetry contain the request id, SQL tag, source class/member/line, and chunked execution-plan XML.
 5. An agent uses the emitted data to find the LINQ query that caused the problem.
 
 ## Install
@@ -118,6 +118,9 @@ This is the link between the execution plan and the original LINQ query.
 - Prefer short, targeted investigations because actual-plan capture adds work to the request.
 - Do not enable retry buffering on the same context that captures actual plans.
 - Prefer Aspire logs/OpenTelemetry as the diagnostic record. The package does not keep an in-memory query log.
+- Application Insights is optional for remote demos or production-like deployments. Local Aspire logs are enough to verify the package.
+- In Application Insights, wait up to 5 minutes for remote logs to appear before treating a missing plan as a failed capture.
+- Reassemble `execution_plan_xml_chunk` records by `request_id`, `command_id`, and `execution_plan_chunk_index` when a Showplan is larger than one log-safe chunk.
 
 ## Verify
 
@@ -140,4 +143,19 @@ Confirm the emitted records include:
 - `include_execution_plan=true`
 - `tag_context`
 - `source`
-- `execution_plan_xml`
+- `execution_plan_xml_chunk`
+
+## Optional Azure Demo
+
+If you want to prove the same workflow in a remote Azure environment, deploy the sample with Azure Developer CLI from the repository root:
+
+```bash
+azd auth login
+azd up
+```
+
+Use the deployed endpoint in place of `http://localhost:<api-port>`, then inspect the provisioned Application Insights resource. Remote telemetry can take up to 5 minutes to appear. Remove the demo resources when finished:
+
+```bash
+azd down
+```

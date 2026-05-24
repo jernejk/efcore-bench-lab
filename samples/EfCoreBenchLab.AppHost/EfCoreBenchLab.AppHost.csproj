@@ -9,6 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Aspire.Hosting.Azure.ApplicationInsights" Version="13.3.5" />
     <PackageReference Include="Aspire.Hosting.SqlServer" Version="13.3.5" />
     <ProjectReference Include="../EfCoreBenchLab.Api/EfCoreBenchLab.Api.csproj" />
   </ItemGroup>
