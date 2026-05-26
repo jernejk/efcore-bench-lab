@@ -1,5 +1,13 @@
 # EF Core Bench Lab
 
+[![Build and Test](https://github.com/jernejk/efcore-bench-lab/actions/workflows/build-test.yml/badge.svg?branch=main)](https://github.com/jernejk/efcore-bench-lab/actions/workflows/build-test.yml)
+[![.NET 10](https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet&logoColor=white)](global.json)
+[![EF Core 10](https://img.shields.io/badge/EF%20Core-10.0.7-512BD4)](src/EfCoreBenchLab.Diagnostics/EfCoreBenchLab.Diagnostics.csproj)
+[![Aspire 13.3.5](https://img.shields.io/badge/Aspire-13.3.5-5C2D91)](samples/EfCoreBenchLab.AppHost/EfCoreBenchLab.AppHost.csproj)
+[![SQL Server actual plans](https://img.shields.io/badge/SQL%20Server-actual%20plans-CC2927?logo=microsoftsqlserver&logoColor=white)](src/EfCoreBenchLab.Diagnostics/EntityFrameworkCore/EfDiagnosticsInterceptor.cs)
+[![OpenTelemetry logs + spans](https://img.shields.io/badge/OpenTelemetry-logs%20%2B%20spans-000000?logo=opentelemetry&logoColor=white)](samples/EfCoreBenchLab.ServiceDefaults/EfCoreBenchLab.ServiceDefaults.csproj)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+
 EF Core Bench Lab is a small Aspire-driven demo for collecting EF Core query telemetry through Aspire logs and OpenTelemetry.
 
 The useful part is the diagnostics package and the agent skills. The lab app is only a proving ground: the intended workflow is to add the package to another ASP.NET Core + EF Core project, tag suspicious queries, trigger actual-plan capture with an HTTP header, then let an AI agent inspect Aspire logs and trace the bad plan back to source code.
