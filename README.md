@@ -89,16 +89,19 @@ The fields the skills expect are:
 - `include_execution_plan`
 - `tag_context`
 - `source`
-- `execution_plan_xml`
+- `execution_plan_xml_chunk`
 
 Use the repo-local skills in this order:
 
 1. `skills/efcore-diagnostics-install` - add the middleware, interceptor, retry-buffering guard, and query tags to the target project.
 2. `skills/efcore-aspire-log-investigator` - trigger the real endpoint with the header and inspect Aspire logs/OpenTelemetry.
-3. `skills/efcore-source-locator` - map `efbench.source` back to the class/member/line and explain the code shape.
-4. `skills/efcore-scenario-tester` - smoke-test this lab or adapt the same checks to the target project's endpoints.
+3. `skills/efcore-appinsights-investigator` - optionally inspect remote Application Insights telemetry through Azure CLI or Azure MCP when the sample is deployed to Azure.
+4. `skills/efcore-source-locator` - map `efbench.source` back to the class/member/line and explain the code shape.
+5. `skills/efcore-scenario-tester` - smoke-test this lab or adapt the same checks to the target project's endpoints.
 
 ## Run
+
+Use Aspire for the normal local verification path:
 
 ```bash
 dotnet restore
@@ -107,6 +110,23 @@ aspire run --apphost samples/EfCoreBenchLab.AppHost/EfCoreBenchLab.AppHost.cspro
 ```
 
 The API is exposed by Aspire. Use `aspire describe --format Json` to discover the exact endpoint.
+
+## Optional Azure Demo
+
+Azure deployment is optional. It is useful when you want to demo remote Application Insights diagnostics or prove the workflow in a production-like Azure Container Apps environment. It is not required to test the diagnostics package; the Aspire run above is enough for local verification.
+
+The repository includes `azure.yaml` for Azure Developer CLI. It deploys the Aspire AppHost from `samples/EfCoreBenchLab.AppHost` to Azure Container Apps and provisions Application Insights for remote telemetry.
+
+```bash
+azd auth login
+azd up
+```
+
+Choose the target subscription and Azure region when prompted. Azure resources can incur cost even for a demo, so remove the deployed sample when it is no longer needed:
+
+```bash
+azd down
+```
 
 ## Scenario Endpoints
 
@@ -118,7 +138,7 @@ Normal scenarios:
 Bad scenarios:
 
 - `/scenarios/bad/wildcard-search?search=road&page=25&pageSize=25` - computed text search across joined tables, then sort/page.
-- `/scenarios/bad/over-fetching?search=road&fetchCount=20000&page=0&pageSize=25` - broad joined fetch, then application-side filter/page.
+- `/scenarios/bad/over-fetching?search=road&fetchCount=5000&page=0&pageSize=25` - broad joined fetch, then application-side filter/page.
 - `/scenarios/bad/n-plus-one?region=Queensland&customerCount=8` - one customer query, then two order queries per customer.
 
 Legacy aliases are still available:
@@ -155,7 +175,7 @@ The important log fields are:
 - `include_execution_plan`
 - `tag_context`
 - `source`
-- `execution_plan_xml`
+- `execution_plan_xml_chunk`
 
 The source tag narrows the bad query to the class/member/line that called `TagWithContext(...)`.
 

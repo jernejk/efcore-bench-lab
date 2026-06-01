@@ -84,4 +84,4 @@ curl -H "X-EF-Include-Execution-Plan: true" "http://localhost:<api-port>/<real-e
 aspire logs <api-resource-name> --tail 200 --timestamps
 ```
 
-Confirm the logs contain `include_execution_plan=true`, a query `tag_context`, a `source`, and an `execution_plan_xml` entry for the tagged query.
+Confirm the logs contain `include_execution_plan=true`, a query `tag_context`, a `source`, and an `execution_plan_xml_chunk` entry for the tagged query.

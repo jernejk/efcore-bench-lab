@@ -6,6 +6,9 @@
 # dotenv files
 .env
 
+# Azure Developer CLI local environment state
+.azure/
+
 # User-specific files
 *.rsuser
 *.suo

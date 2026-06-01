@@ -19,6 +19,7 @@ public sealed class EfDiagnosticsOptions
     public string RequestIdHeaderName { get; set; } = DefaultRequestIdHeaderName;
     public bool EnableExecutionPlanCapture { get; set; } = true;
     public bool IncludeSqlInLogs { get; set; } = true;
+    public int ExecutionPlanLogChunkSize { get; set; } = 7_000;
 
     public bool IsExecutionPlanRequest(string? headerValue)
     {

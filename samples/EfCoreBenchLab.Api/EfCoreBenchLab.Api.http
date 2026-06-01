@@ -16,7 +16,7 @@ X-EF-Include-Execution-Plan: true
 
 ###
 
-GET {{EfCoreBenchLab.Api_HostAddress}}/scenarios/bad/over-fetching?search=road&fetchCount=20000&page=0&pageSize=25
+GET {{EfCoreBenchLab.Api_HostAddress}}/scenarios/bad/over-fetching?search=road&fetchCount=5000&page=0&pageSize=25
 Accept: application/json
 X-EF-Include-Execution-Plan: true
 

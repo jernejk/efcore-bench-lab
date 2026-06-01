@@ -29,7 +29,7 @@ Generic project:
 
 - The request log includes `include_execution_plan=true`.
 - EF command logs include the expected `tag_context`.
-- The execution-plan log includes `execution_plan_xml`.
+- The execution-plan log includes `execution_plan_xml_chunk`.
 - The `source` points to the expected class/member/line.
 
 Lab endpoints:

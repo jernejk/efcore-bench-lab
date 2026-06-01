@@ -9,8 +9,8 @@ flowchart TD
     A["Choose a real endpoint"] --> B["Call without diagnostics header"]
     B --> C["Call with X-EF-Include-Execution-Plan: true"]
     C --> D["Capture X-EF-Diagnostics-Request-Id"]
-    D --> E["Inspect Aspire logs and OpenTelemetry"]
-    E --> F["Find tag_context and execution_plan_xml"]
+    D --> E["Inspect Aspire or Application Insights logs"]
+    E --> F["Find tag_context and execution_plan_xml_chunk"]
     F --> G["Open source from efbench.source"]
     G --> H["Map plan symptoms back to LINQ"]
     H --> I["Recommend smallest code or schema fix"]
@@ -70,9 +70,79 @@ Search for:
 - `include_execution_plan`
 - `tag_context`
 - `source`
-- `execution_plan_xml`
+- `execution_plan_xml_chunk`
 
-## 4. Read The Diagnostic Record
+## 4. Optional: Inspect Remote Application Insights
+
+This step is only for an optional Azure demo or a production-like deployment. Local Aspire logs/OpenTelemetry are enough to test the package.
+
+For deployed Azure Container Apps, use the Application Insights resource created by `azd` from the Aspire AppHost. Logs can take up to 5 minutes to appear in Application Insights, so wait before concluding that capture failed.
+
+The repo-local `skills/efcore-appinsights-investigator` skill contains Azure CLI and optional Azure MCP commands for this remote path.
+
+Find EF command logs and plan-capture summaries:
+
+```kusto
+traces
+| where timestamp > ago(30m)
+| where message has "EF command executed"
+   or message has "EF actual execution plan captured"
+   or message has "EF actual execution plan chunk"
+| extend request_id = tostring(customDimensions["request_id"])
+| extend include_execution_plan = tostring(customDimensions["include_execution_plan"])
+| extend tag_context = tostring(customDimensions["tag_context"])
+| extend source = tostring(customDimensions["source"])
+| extend duration_ms = todouble(customDimensions["duration_ms"])
+| project timestamp, operation_Id, request_id, include_execution_plan, tag_context, source, duration_ms, message, customDimensions
+| order by timestamp desc
+```
+
+Rebuild a captured execution plan for one request:
+
+```kusto
+let requestId = "<X-EF-Diagnostics-Request-Id>";
+traces
+| where timestamp > ago(30m)
+| where message has "EF actual execution plan chunk"
+| where tostring(customDimensions["request_id"]) == requestId
+| extend command_id = tostring(customDimensions["command_id"])
+| extend execution_plan_sha256 = tostring(customDimensions["execution_plan_sha256"])
+| extend chunk_index = toint(customDimensions["execution_plan_chunk_index"])
+| extend chunk_count = toint(customDimensions["execution_plan_chunk_count"])
+| extend chunk = tostring(customDimensions["execution_plan_xml_chunk"])
+| order by command_id asc, chunk_index asc
+| summarize execution_plan_xml = strcat_array(make_list(chunk), "")
+    by request_id = requestId, command_id, execution_plan_sha256, chunk_count
+```
+
+Find suspicious endpoints without on-demand execution-plan capture:
+
+```kusto
+let efCommands =
+    traces
+    | where timestamp > ago(24h)
+    | where message has "EF command executed"
+    | extend duration_ms = todouble(customDimensions["duration_ms"])
+    | extend tag_context = tostring(customDimensions["tag_context"])
+    | summarize db_command_count = count(),
+        total_db_ms = sum(duration_ms),
+        p95_db_ms = percentile(duration_ms, 95),
+        query_tags = make_set(tag_context, 20)
+      by operation_Id;
+requests
+| where timestamp > ago(24h)
+| join kind=leftouter efCommands on operation_Id
+| summarize request_count = count(),
+    avg_request_ms = avg(duration),
+    p95_request_ms = percentile(duration, 95),
+    avg_db_commands = avg(db_command_count),
+    avg_total_db_ms = avg(total_db_ms),
+    query_tags = make_set(query_tags, 20)
+  by name
+| order by p95_request_ms desc
+```
+
+## 5. Read The Diagnostic Record
 
 A useful captured record should answer:
 
@@ -82,9 +152,9 @@ A useful captured record should answer:
 | `tag_context` | Names the query or business operation. |
 | `source` | Points to the class/member/line that added `TagWithContext`. |
 | `duration_ms` | Gives a first-order impact signal for the command. |
-| `execution_plan_xml` | Contains SQL Server actual execution-plan operators and runtime row counts. |
+| `execution_plan_xml_chunk` | Contains chunked SQL Server actual execution-plan XML. Reassemble chunks by `request_id`, `command_id`, and `execution_plan_chunk_index`. |
 
-## 5. Interpret Common Symptoms
+## 6. Interpret Common Symptoms
 
 | Symptom | Common LINQ shape | Likely impact |
 | --- | --- | --- |
@@ -95,7 +165,7 @@ A useful captured record should answer:
 | Many similar EF command logs | Query inside a loop | N+1 request amplification. |
 | Fetched rows much greater than returned rows | `.ToListAsync()` before filtering/paging | Moves filtering work from SQL Server to application memory. |
 
-## 6. Locate The Source
+## 7. Locate The Source
 
 Use the `efbench.source` value:
 

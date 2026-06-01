@@ -51,7 +51,7 @@ public sealed class OrderScenarioService(
             diagnosticsContextAccessor.Current?.RequestId,
             new Dictionary<string, object?>
             {
-                ["expectedProblem"] = "wildcard LIKE over computed joined text plus sort before paging"
+                ["expectedProblem"] = "bounded candidate set with wildcard LIKE over computed joined text plus sort before paging"
             },
             rows);
     }
