@@ -483,3 +483,7 @@ $RECYCLE.BIN/
 
 .playwright-mcp
 docs/visuals/
+docs/presentations/
+outputs/
+
+.claude/
