@@ -7,7 +7,11 @@
     <Project Path="samples/EfCoreBenchLab.AppHost/EfCoreBenchLab.AppHost.csproj" />
     <Project Path="samples/EfCoreBenchLab.ServiceDefaults/EfCoreBenchLab.ServiceDefaults.csproj" />
   </Folder>
+  <Folder Name="/tools/">
+    <Project Path="tools/EfCoreBenchLab.LogInsights/EfCoreBenchLab.LogInsights.csproj" />
+  </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/EfCoreBenchLab.Diagnostics.Tests/EfCoreBenchLab.Diagnostics.Tests.csproj" />
+    <Project Path="tools/EfCoreBenchLab.LogInsights.Tests/EfCoreBenchLab.LogInsights.Tests.csproj" />
   </Folder>
 </Solution>

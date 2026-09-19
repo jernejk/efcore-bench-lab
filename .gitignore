@@ -487,3 +487,7 @@ docs/presentations/
 outputs/
 
 .claude/
+# efinsights: GGUF model weights are fetched, not committed; its log fixtures are
+*.gguf
+!tools/EfCoreBenchLab.LogInsights/samples/*.log
+!tools/EfCoreBenchLab.LogInsights.Tests/fixtures/*.log
