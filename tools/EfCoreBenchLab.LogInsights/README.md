@@ -16,10 +16,27 @@ Each investigation is **deterministic code where the structure is known, plus a 
 
 The split is deliberate: *source + duration + the N+1 count* are facts you parse; *smell + fix* is the judgement a tiny specialist is good at. Swap `--adapter` to change the lens.
 
+## Backends
+`--backend` picks who makes the judgement call; the deterministic facts are always printed either way.
+
+| backend | what it is | needs |
+|---|---|---|
+| `none` (default) | deterministic facts only | nothing |
+| `local` | the bundled 350M LFM2.5 `sql-smell` LoRA, offline, $0 | `--model <base.gguf>` |
+| `jev` | hosted decision model (`typesafe/jev-1.13` via OpenRouter) | `OPENROUTER_API_KEY` |
+
+Every backend degrades to bare facts and exits 0 when it is unavailable — missing key, missing model, API down, or spend cap reached. The `jev` backend caches each decision on disk under `.jev-cache/` and records spend in `jev-ledger.jsonl`, capped by `--spend-cap` (default $0.50). Answers below `--confidence` (default 0.75) are withheld rather than shown.
+
+The API key is read **only** from the `OPENROUTER_API_KEY` environment variable and is never printed or written to disk.
+
 ## Run
 ```bash
 # deterministic only (no model needed)
 dotnet run -c Release -- all path/to/aspire.log
+
+# hosted decision backend
+export OPENROUTER_API_KEY=...
+dotnet run -c Release -- all path/to/capture.json --backend jev --confidence 0.75
 
 # with the tiny model + bundled sql-smell adapter
 dotnet run -c Release -- all path/to/aspire.log --model path/to/LFM2.5-350M-Q4_K_M.gguf

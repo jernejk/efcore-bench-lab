@@ -491,3 +491,7 @@ outputs/
 *.gguf
 !tools/EfCoreBenchLab.LogInsights/samples/*.log
 !tools/EfCoreBenchLab.LogInsights.Tests/fixtures/*.log
+
+# efinsights --backend jev: local decision cache, spend ledger and any captured response
+.jev-cache/
+jev-ledger.jsonl
