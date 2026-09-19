@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>efinsights</AssemblyName>
+    <RootNamespace>EfCoreBenchLab.LogInsights</RootNamespace>
+    <Description>CLI that reads Aspire/EF Core command logs, locates the slow queries deterministically, and explains them with a tiny local LFM2.5 LoRA expert.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="LLamaSharp" Version="0.27.0" />
+    <PackageReference Include="LLamaSharp.Backend.Cpu" Version="0.27.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="models\*.gguf" CopyToOutputDirectory="PreserveNewest" Condition="Exists('models')" />
+  </ItemGroup>
+
+</Project>

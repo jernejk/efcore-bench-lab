@@ -1,0 +1,2 @@
+[
+  {"logId": 1, "message": "EF command executed duration_ms=1.0 tag_context=X source=Y:Z:1 sql=SELECT 1"
