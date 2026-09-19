@@ -18,14 +18,16 @@ public static partial class LogParser
 
     /// Aspire exports structured logs as JSON, where line mode both miscounts compact captures and
     /// flattens each statement onto its `-- efbench.context:` comment line. `.log` files stay on line mode.
-    public static List<LogEntry> Load(string path)
+    public static List<LogEntry> Load(string path) => LoadWithPlans(path).Entries;
+
+    public static (List<LogEntry> Entries, List<string> PlanOperators) LoadWithPlans(string path)
     {
         var text = File.ReadAllText(path);
         if (LooksLikeJson(text))
         {
             try { return FromJson(text); } catch (JsonException) { /* malformed — fall back to line mode */ }
         }
-        return Parse(text.Split('\n'));
+        return (Parse(text.Split('\n')), []);
     }
 
     static bool LooksLikeJson(string text)
@@ -34,11 +36,12 @@ public static partial class LogParser
         return trimmed.StartsWith('[') || trimmed.StartsWith('{');
     }
 
-    static List<LogEntry> FromJson(string text)
+    static (List<LogEntry>, List<string>) FromJson(string text)
     {
         using var doc = JsonDocument.Parse(text);
         var entries = new List<LogEntry>();
-        if (doc.RootElement.ValueKind != JsonValueKind.Array) return entries;
+        var plans = new List<string>();
+        if (doc.RootElement.ValueKind != JsonValueKind.Array) return (entries, plans);
 
         foreach (var el in doc.RootElement.EnumerateArray())
         {
@@ -46,6 +49,9 @@ public static partial class LogParser
             if (!el.TryGetProperty("message", out var msg) || msg.ValueKind != JsonValueKind.String) continue;
 
             var raw = msg.GetString()!;
+            if (raw.Contains("PhysicalOp=", StringComparison.Ordinal))
+                plans.AddRange(SqlFactExtractor.PlanOperatorsFrom(raw));
+
             var m = MultiLine.Match(raw);
             if (!m.Success) continue;
             entries.Add(new LogEntry(
@@ -53,7 +59,7 @@ public static partial class LogParser
                 Null(m.Groups["src"].Value), Null(m.Groups["tag"].Value),
                 Cap(PathRx, raw), Cap(RidRx, raw), m.Groups["sql"].Value.Trim()));
         }
-        return entries;
+        return (entries, plans.Distinct().Take(12).ToList());
     }
 
     public static List<LogEntry> Parse(IEnumerable<string> lines)
